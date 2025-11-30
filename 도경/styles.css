@@ -145,6 +145,20 @@ button:hover { filter: brightness(0.97); }
   min-height: 100px;
 }
 
+.mini-result {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff1e8;
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.mini-result.result-finished {
+  background: #e7f7ff;
+  border-color: #a3d7ff;
+}
+
 .mini-grid div {
   background: #faf5ff;
   border: 1px solid #e5dcff;
