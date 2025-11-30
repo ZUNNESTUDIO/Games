@@ -330,8 +330,7 @@ public class FPS_ALLINONE_FULL : MonoBehaviour
     {
         Vector3 dir = (player.transform.position + Vector3.up * 1.5f) - enemy.transform.position;
         Vector3 enemyEyePos = enemy.transform.position + Vector3.up * 1.5f;
-        if (Physics.Raycast(
-            enemyEyePos,
+        if (Physics.Raycast(enemyEyePos,
             dir.normalized,
             out RaycastHit hit,
             enemyShootDist))
