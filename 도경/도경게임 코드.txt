@@ -64,7 +64,9 @@ function checkEventDay() {
     else currentEvent = null;
 
     applyEventVisual();
-    showEventBanner();
+    const banner = document.getElementById("eventBanner");
+
+    if (banner) showEventBanner(banner);
     if (currentEvent) showEventBox();
 }
 
@@ -102,8 +104,8 @@ function applyEventVisual() {
 //--------------------------------------------------
 // 이벤트 배너
 //--------------------------------------------------
-function showEventBanner() {
-    const b = document.getElementById("eventBanner");
+function showEventBanner(bannerEl) {
+    const b = bannerEl ?? document.getElementById("eventBanner");
 
     if (!b) return;
 
