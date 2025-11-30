@@ -1,0 +1,202 @@
+/Scripts
+   /Player
+      PlayerMovement.cs
+      PlayerLook.cs
+      PlayerWeaponController.cs
+      PlayerInventory.cs
+   /Weapons
+      Weapon.cs
+      Gun.cs
+      Grenade.cs
+   /Game
+      GameManager.cs
+      MoneySystem.cs
+      DifficultyManager.cs
+      WeaponShop.cs
+      MapSelector.cs
+      IntroText.cs
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    public float speed = 5f;
+    public float jumpForce = 5f;
+    public CharacterController controller;
+
+    private Vector3 velocity;
+    public float gravity = -9.8f;
+
+    void Update()
+    {
+        float x = Input.GetAxis("Horizontal");  // A, D
+        float z = Input.GetAxis("Vertical");    // W, S
+
+        Vector3 move = transform.right * x + transform.forward * z;
+        controller.Move(move * speed * Time.deltaTime);
+
+        // 점프
+        if (Input.GetButtonDown("Jump") && controller.isGrounded)
+        {
+            velocity.y = jumpForce;
+        }
+
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+    }
+}
+using UnityEngine;
+
+public class PlayerWeaponController : MonoBehaviour
+{
+    public GameObject primaryWeapon;    // 슬롯 1
+    public GameObject secondaryWeapon1; // 슬롯 2
+    public GameObject secondaryWeapon2; // 슬롯 3
+    public GameObject grenade;          // 슬롯 4
+
+    private GameObject currentWeapon;
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+            Equip(primaryWeapon);
+
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+            Equip(secondaryWeapon1);
+
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+            Equip(secondaryWeapon2);
+
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+            Equip(grenade);
+    }
+
+    void Equip(GameObject weapon)
+    {
+        if (currentWeapon != null)
+            currentWeapon.SetActive(false);
+
+        currentWeapon = weapon;
+        currentWeapon.SetActive(true);
+    }
+}
+using UnityEngine;
+
+public class Weapon : MonoBehaviour
+{
+    public string weaponName;
+    public int damage;
+    public float fireRate;
+    public int price;
+}
+using UnityEngine;
+
+public class Gun : Weapon
+{
+    public GameObject bulletPrefab;
+    public Transform firePoint;
+    private float nextFire = 0f;
+
+    void Update()
+    {
+        if (Input.GetMouseButton(0) && Time.time >= nextFire)
+        {
+            nextFire = Time.time + fireRate;
+            Shoot();
+        }
+    }
+
+    void Shoot()
+    {
+        Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+    }
+}
+using UnityEngine;
+
+public class MoneySystem : MonoBehaviour
+{
+    public static int coins = 0;
+
+    public static void AddWinReward(int chainWins)
+    {
+        coins += 5;
+    }
+}
+using UnityEngine;
+
+public class WeaponShop : MonoBehaviour
+{
+    public Weapon[] primaryWeapons;    // 20개
+    public Weapon[] secondaryWeapons;  // 10개
+    public Weapon[] bombWeapons;       // 5개
+
+    public bool BuyWeapon(Weapon weapon)
+    {
+        if (MoneySystem.coins >= weapon.price)
+        {
+            MoneySystem.coins -= weapon.price;
+            return true;
+        }
+        else
+        {
+            Debug.Log("돈 부족!");
+            return false;
+        }
+    }
+}
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class MapSelector : MonoBehaviour
+{
+    public void SelectMap(string mapName)
+    {
+        SceneManager.LoadScene(mapName);
+    }
+}
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class MapSelector : MonoBehaviour
+{
+    public void SelectMap(string mapName)
+    {
+        SceneManager.LoadScene(mapName);
+    }
+}
+using UnityEngine;
+using UnityEngine.UI;
+
+public class IntroText : MonoBehaviour
+{
+    public GameObject introPanel;
+
+    void Update()
+    {
+        if (introPanel.activeSelf && Input.GetKeyDown(KeyCode.Return))
+        {
+            introPanel.SetActive(false);
+        }
+    }
+}
+using UnityEngine;
+
+public class DifficultyManager : MonoBehaviour
+{
+    public static float enemyDamage = 10;
+    public static float enemySpawnRate = 1.0f;
+
+    public static void AdjustDifficulty(int winStreak)
+    {
+        enemyDamage = 10 + winStreak * 1.5f;
+        enemySpawnRate = Mathf.Max(0.3f, 1.0f - winStreak * 0.05f);
+    }
+}
+
+
+
+
+
+
+
+
+
