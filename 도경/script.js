@@ -242,12 +242,22 @@ function updateStats() {
 //--------------------------------------------------
 let miniGameOpened = false;
 let firstPick = null;
+let matchedPairs = 0;
+let miniGameReward = 0;
+let totalPairs = 0;
 
 function startMiniGame() {
   const area = document.getElementById("miniGame");
   area.innerHTML = "";
   miniGameOpened = true;
   firstPick = null;
+  matchedPairs = 0;
+  miniGameReward = 0;
+  totalPairs = 0;
+
+  const resultBox = document.getElementById("miniGameResult");
+  resultBox.innerHTML = "카드를 뒤집어 짝을 맞혀 보세요!";
+  resultBox.classList.remove("result-finished");
 
   const picks = [];
   for (let i = 0; i < 4; i++) {
@@ -263,6 +273,8 @@ function startMiniGame() {
     div.onclick = () => flipCard(div, name);
     area.appendChild(div);
   });
+
+  totalPairs = picks.length / 2;
 }
 
 function flipCard(div, name) {
@@ -276,8 +288,14 @@ function flipCard(div, name) {
     if (firstPick.name === name && firstPick.div !== div) {
       const reward = currentEvent === "hangul" ? 200 : 100;
       money += reward;
+      miniGameReward += reward;
       alert(`정답! 머니 +${reward}`);
       updateStats();
+      matchedPairs++;
+
+      if (matchedPairs === totalPairs) {
+        endMiniGame();
+      }
     } else {
       setTimeout(() => {
         div.textContent = "?";
@@ -286,6 +304,20 @@ function flipCard(div, name) {
     }
     firstPick = null;
   }
+}
+
+function endMiniGame() {
+  miniGameOpened = false;
+  const resultBox = document.getElementById("miniGameResult");
+  resultBox.classList.add("result-finished");
+  resultBox.innerHTML = `
+    <p>미니게임 종료! 총 획득 머니: <strong>${miniGameReward}</strong></p>
+    <button type="button" onclick="restartMiniGame()">다시 시작</button>
+  `;
+}
+
+function restartMiniGame() {
+  startMiniGame();
 }
 
 //--------------------------------------------------
