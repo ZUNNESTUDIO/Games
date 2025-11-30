@@ -42,6 +42,8 @@ class Player:
         self.size = 30
         self.velocity_y = 0
         self.on_ground = False
+        self.max_jumps = 30
+        self.jumps_left = self.max_jumps
 
     def update(self):
         self.velocity_y += 0.4
@@ -53,9 +55,10 @@ class Player:
             self.on_ground = True
 
     def jump(self):
-        if self.on_ground:
+        if self.on_ground and self.jumps_left > 0:
             self.velocity_y = -10
             self.on_ground = False
+            self.jumps_left -= 1
 
     def draw(self):
         pygame.draw.rect(screen, player_color, (self.x, self.y, self.size, self.size))
@@ -315,8 +318,12 @@ def game_loop(difficulty):
         font = pygame.font.SysFont(None, 40)
         text = font.render(f"단계: {difficulty}", True, BLACK)
         score_text = font.render(f"점수: {score}", True, BLACK)
+        jump_text = font.render(
+            f"남은 점프: {player.jumps_left}/{player.max_jumps}", True, BLACK
+        )
         screen.blit(text, (10, 10))
         screen.blit(score_text, (10, 50))
+        screen.blit(jump_text, (10, 90))
 
         pygame.display.flip()
         clock.tick(60)
