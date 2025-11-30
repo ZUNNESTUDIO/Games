@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>몬스터 잡는 RPG - 유섭</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(15, 23, 42, 0.82);
+      --accent: #38bdf8;
+      --accent-2: #f97316;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 25%),
+        radial-gradient(circle at 80% 30%, rgba(249, 115, 22, 0.08), transparent 25%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 16px 24px 4px;
+    }
+
+    h1 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    h1 span {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      padding: 0 24px 24px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      padding: 16px;
+      backdrop-filter: blur(12px);
+    }
+
+    #game-area {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: #0b1221;
+      aspect-ratio: 4 / 3;
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .pill {
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 12px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pill strong {
+      color: var(--accent);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      background: linear-gradient(145deg, rgba(56, 189, 248, 0.8), rgba(59, 130, 246, 0.85));
+      color: #0b1221;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.2s ease, background 0.2s ease;
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.25);
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: none;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .log {
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .log p {
+      margin: 4px 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-weight: 800;
+      font-size: 16px;
+      margin: 0 0 8px;
+    }
+
+    .flex-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      background: rgba(56, 189, 248, 0.2);
+      color: #7dd3fc;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .shop, .dex {
+      display: grid;
+      gap: 8px;
+    }
+
+    .shop-item, .dex-item {
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .dex-item small {
+      color: var(--muted);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      #game-area { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>몬스터 잡는 RPG <span>Canvas 탐험 / 전투 / 도감 / 샵</span></h1>
+  </header>
+  <main>
+    <section class="card" id="game-area">
+      <div>
+        <div class="hud">
+          <div class="pill">맵 <strong id="mapName">숲</strong></div>
+          <div class="pill">좌표 <strong id="coords">0, 0</strong></div>
+          <div class="pill">플레이어 HP <strong id="playerHp">0 / 0</strong></div>
+          <div class="pill">Lv <strong id="playerLevel">1</strong></div>
+          <div class="pill">경험치 <strong id="playerExp">0 / 10</strong></div>
+          <div class="pill">골드 <strong id="playerGold">0</strong></div>
+        </div>
+        <canvas id="gameCanvas" width="640" height="480"></canvas>
+      </div>
+      <div>
+        <div class="flex-between">
+          <p class="section-title">전투 & 탐험</p>
+          <div class="badge" id="stateLabel">탐험 중</div>
+        </div>
+        <div class="controls">
+          <button id="attackBtn">공격</button>
+          <button id="skillBtn">파워 스트라이크</button>
+          <button class="secondary" id="captureBtn">몬스터 포획</button>
+          <button class="secondary" id="potionBtn">포션 사용</button>
+          <button class="secondary" id="runBtn">도망</button>
+          <button id="mapBtn">맵 이동</button>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <p class="section-title">이벤트 로그</p>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="tabs">
+        <button id="dexTab" class="secondary">도감</button>
+        <button id="shopTab" class="secondary">샵</button>
+      </div>
+      <div id="dexPanel" class="dex"></div>
+      <div id="shopPanel" class="shop hidden"></div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const maps = [
+      { id: 'forest', name: '에메랄드 숲', color: ['#0c3b2e', '#102a2b'], encounterRate: 0.16 },
+      { id: 'desert', name: '태양 모래사막', color: ['#402c0b', '#23150a'], encounterRate: 0.18 },
+      { id: 'glacier', name: '서리 빙원', color: ['#0c1e3c', '#0a1527'], encounterRate: 0.2 }
+    ];
+
+    const monsterTemplates = [
+      { name: '잎새 슬라임', map: 'forest', maxHp: 28, attack: 6, defense: 2, speed: 4, exp: 6, coins: 6, rarity: 60 },
+      { name: '숲 도마뱀', map: 'forest', maxHp: 32, attack: 7, defense: 3, speed: 5, exp: 7, coins: 8, rarity: 30 },
+      { name: '뿌리 정령', map: 'forest', maxHp: 40, attack: 8, defense: 4, speed: 3, exp: 9, coins: 12, rarity: 10 },
+
+      { name: '모래 두더지', map: 'desert', maxHp: 36, attack: 9, defense: 3, speed: 6, exp: 8, coins: 11, rarity: 45 },
+      { name: '불꽃 여우', map: 'desert', maxHp: 42, attack: 11, defense: 5, speed: 6, exp: 12, coins: 15, rarity: 35 },
+      { name: '선인장 기사', map: 'desert', maxHp: 52, attack: 12, defense: 7, speed: 4, exp: 15, coins: 20, rarity: 20 },
+
+      { name: '눈토끼', map: 'glacier', maxHp: 38, attack: 9, defense: 4, speed: 8, exp: 10, coins: 13, rarity: 40 },
+      { name: '얼음 골렘', map: 'glacier', maxHp: 65, attack: 13, defense: 9, speed: 3, exp: 18, coins: 24, rarity: 35 },
+      { name: '수정 드래곤', map: 'glacier', maxHp: 80, attack: 16, defense: 10, speed: 5, exp: 26, coins: 36, rarity: 20 },
+
+      { name: '그림자 폭군 (보스)', map: 'glacier', boss: true, maxHp: 130, attack: 22, defense: 12, speed: 8, exp: 50, coins: 80, rarity: 5 }
+    ];
+
+    const player = {
+      x: 5,
+      y: 5,
+      level: 1,
+      exp: 0,
+      maxHp: 60,
+      hp: 60,
+      attack: 10,
+      defense: 5,
+      speed: 6,
+      coins: 30,
+      potions: 2,
+      orbs: 2,
+      mapIndex: 0,
+      dex: {},
+      captured: []
+    };
+
+    const state = {
+      mode: 'explore',
+      encounter: null,
+      messageQueue: [],
+      lastEncounterStep: 0,
+      stepCount: 0
+    };
+
+    const controls = {
+      attackBtn: document.getElementById('attackBtn'),
+      skillBtn: document.getElementById('skillBtn'),
+      captureBtn: document.getElementById('captureBtn'),
+      potionBtn: document.getElementById('potionBtn'),
+      runBtn: document.getElementById('runBtn'),
+      mapBtn: document.getElementById('mapBtn'),
+    };
+
+    const hud = {
+      mapName: document.getElementById('mapName'),
+      coords: document.getElementById('coords'),
+      hp: document.getElementById('playerHp'),
+      level: document.getElementById('playerLevel'),
+      exp: document.getElementById('playerExp'),
+      gold: document.getElementById('playerGold'),
+      stateLabel: document.getElementById('stateLabel'),
+      log: document.getElementById('log')
+    };
+
+    const panels = {
+      dexPanel: document.getElementById('dexPanel'),
+      shopPanel: document.getElementById('shopPanel'),
+      dexTab: document.getElementById('dexTab'),
+      shopTab: document.getElementById('shopTab')
+    };
+
+    const shopItems = [
+      { id: 'potion', name: '회복 포션', desc: 'HP 35 회복', price: 12 },
+      { id: 'orb', name: '포획 오브', desc: '약해진 몬스터 포획 시도', price: 15 },
+      { id: 'elixir', name: '전투 강화서', desc: '공격/방어 +1 (영구)', price: 35 }
+    ];
+
+    function log(message) {
+      const p = document.createElement('p');
+      p.textContent = message;
+      hud.log.prepend(p);
+    }
+
+    function enqueue(message) {
+      state.messageQueue.push(message);
+    }
+
+    function flushMessages() {
+      while (state.messageQueue.length) log(state.messageQueue.shift());
+    }
+
+    function randomChoice(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function generateEncounter() {
+      const currentMap = maps[player.mapIndex].id;
+      const candidates = monsterTemplates.filter(m => m.map === currentMap);
+      const total = candidates.reduce((sum, m) => sum + (m.rarity || 1), 0);
+      let r = Math.random() * total;
+      for (const m of candidates) {
+        r -= (m.rarity || 1);
+        if (r <= 0) {
+          const copy = { ...m, hp: m.maxHp };
+          if (m.boss) copy.name += ' ★';
+          return copy;
+        }
+      }
+      return { ...candidates[0], hp: candidates[0].maxHp };
+    }
+
+    function updateHud() {
+      hud.mapName.textContent = maps[player.mapIndex].name;
+      hud.coords.textContent = `${player.x}, ${player.y}`;
+      hud.hp.textContent = `${player.hp} / ${player.maxHp}`;
+      hud.level.textContent = player.level;
+      hud.exp.textContent = `${player.exp} / ${neededExp(player.level)}`;
+      hud.gold.textContent = player.coins;
+      hud.stateLabel.textContent = state.mode === 'explore' ? '탐험 중' : '전투 중';
+      hud.stateLabel.style.background = state.mode === 'explore'
+        ? 'rgba(56, 189, 248, 0.15)'
+        : 'rgba(249, 115, 22, 0.2)';
+    }
+
+    function neededExp(level) {
+      return 10 + level * level * 4;
+    }
+
+    function heal(amount) {
+      player.hp = Math.min(player.maxHp, player.hp + amount);
+    }
+
+    function startEncounter() {
+      state.mode = 'battle';
+      state.encounter = generateEncounter();
+      enqueue(`야생의 ${state.encounter.name} 이(가) 나타났다!`);
+      flushMessages();
+      updateHud();
+    }
+
+    function endEncounter(victory = false) {
+      if (victory) {
+        const { exp, coins, name } = state.encounter;
+        enqueue(`${name}을(를) 쓰러뜨렸다! 경험치 ${exp}, 골드 ${coins} 획득.`);
+        player.exp += exp;
+        player.coins += coins;
+        addToDex(state.encounter.name, victory);
+        checkLevelUp();
+      }
+      state.mode = 'explore';
+      state.encounter = null;
+      flushMessages();
+      updateHud();
+    }
+
+    function checkLevelUp() {
+      while (player.exp >= neededExp(player.level)) {
+        player.exp -= neededExp(player.level);
+        player.level += 1;
+        player.maxHp += 8;
+        player.attack += 2;
+        player.defense += 1;
+        player.speed += 1;
+        player.hp = player.maxHp;
+        enqueue(`레벨 업! Lv ${player.level} (HP/공격/방어/속도 상승)`);
+      }
+    }
+
+    function addToDex(name, caught = false) {
+      const baseName = name.replace(' ★', '');
+      if (!player.dex[baseName]) {
+        player.dex[baseName] = { seen: true, caught: caught };
+      } else {
+        player.dex[baseName].seen = true;
+        player.dex[baseName].caught = player.dex[baseName].caught || caught;
+      }
+      renderDex();
+    }
+
+    function renderDex() {
+      panels.dexPanel.innerHTML = '';
+      const all = monsterTemplates.map(m => m.name);
+      all.forEach(name => {
+        const base = name;
+        const info = player.dex[base];
+        const div = document.createElement('div');
+        div.className = 'dex-item';
+        div.innerHTML = `<div><strong>${base}</strong><br/><small>${info?.seen ? '발견' : '미발견'}</small></div>` +
+          `<div class="badge" style="background:${info?.caught ? 'rgba(34,197,94,0.2)' : 'rgba(148,163,184,0.2)'};color:${info?.caught ? '#bbf7d0' : '#e2e8f0'}">${info?.caught ? '포획' : '---'}</div>`;
+        panels.dexPanel.appendChild(div);
+      });
+    }
+
+    function renderShop() {
+      panels.shopPanel.innerHTML = '';
+      shopItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        const btn = document.createElement('button');
+        btn.textContent = `${item.price} G 구매`;
+        btn.onclick = () => buyItem(item);
+        div.innerHTML = `<div><strong>${item.name}</strong><br/><small>${item.desc}</small></div>`;
+        div.appendChild(btn);
+        panels.shopPanel.appendChild(div);
+      });
+    }
+
+    function buyItem(item) {
+      if (player.coins < item.price) {
+        log('골드가 부족합니다.');
+        return;
+      }
+      player.coins -= item.price;
+      if (item.id === 'potion') player.potions++;
+      if (item.id === 'orb') player.orbs++;
+      if (item.id === 'elixir') {
+        player.attack += 1;
+        player.defense += 1;
+      }
+      log(`${item.name}을(를) 구입했습니다.`);
+      updateHud();
+    }
+
+    function attack(baseMultiplier = 1) {
+      if (!state.encounter) return;
+      const crit = Math.random() < 0.1 ? 1.5 : 1;
+      const dmg = Math.max(1, Math.floor((player.attack * baseMultiplier * crit) - state.encounter.defense));
+      state.encounter.hp -= dmg;
+      enqueue(`플레이어의 공격! ${state.encounter.name}에게 ${dmg} 피해${crit > 1 ? ' (치명타!)' : ''}`);
+      if (state.encounter.hp <= 0) {
+        endEncounter(true);
+        return;
+      }
+      enemyTurn();
+      flushMessages();
+      updateHud();
+    }
+
+    function skillStrike() {
+      if (Math.random() < 0.2) {
+        enqueue('파워 스트라이크가 빗나갔다!');
+        enemyTurn();
+        flushMessages();
+        return;
+      }
+      attack(1.8);
+    }
+
+    function enemyTurn() {
+      if (!state.encounter) return;
+      const enemy = state.encounter;
+      const dmg = Math.max(1, Math.floor(enemy.attack - player.defense * 0.6));
+      player.hp -= dmg;
+      enqueue(`${enemy.name}의 반격! ${dmg} 피해를 입었다.`);
+      if (player.hp <= 0) {
+        player.hp = Math.ceil(player.maxHp / 2);
+        enqueue('쓰러졌다... 가까운 마을에서 부활합니다. (HP 절반)');
+        state.mode = 'explore';
+        state.encounter = null;
+      }
+    }
+
+    function attemptCapture() {
+      if (!state.encounter) return;
+      if (player.orbs <= 0) {
+        log('포획 오브가 없습니다.');
+        return;
+      }
+      player.orbs -= 1;
+      const hpRatio = state.encounter.hp / state.encounter.maxHp;
+      const chance = Math.max(0.1, 0.6 - hpRatio);
+      if (Math.random() < chance && !state.encounter.boss) {
+        enqueue(`${state.encounter.name} 포획 성공!`);
+        player.captured.push(state.encounter.name);
+        addToDex(state.encounter.name, true);
+        state.mode = 'explore';
+        state.encounter = null;
+      } else {
+        enqueue('포획 실패!');
+        enemyTurn();
+      }
+      flushMessages();
+      updateHud();
+    }
+
+    function usePotion() {
+      if (player.potions <= 0) {
+        log('포션이 없습니다.');
+        return;
+      }
+      player.potions -= 1;
+      heal(35);
+      enqueue('회복 포션 사용! HP가 35 회복되었습니다.');
+      if (state.mode === 'battle') {
+        enemyTurn();
+      }
+      flushMessages();
+      updateHud();
+    }
+
+    function attemptRun() {
+      if (!state.encounter) return;
+      const success = Math.random() < 0.5 + (player.speed - state.encounter.speed) * 0.03;
+      if (success) {
+        enqueue('성공적으로 도망쳤다!');
+        state.mode = 'explore';
+        state.encounter = null;
+      } else {
+        enqueue('도망 실패!');
+        enemyTurn();
+      }
+      flushMessages();
+      updateHud();
+    }
+
+    function changeMap() {
+      player.mapIndex = (player.mapIndex + 1) % maps.length;
+      enqueue(`${maps[player.mapIndex].name}으로 이동했습니다.`);
+      state.mode = 'explore';
+      state.encounter = null;
+      updateHud();
+      flushMessages();
+    }
+
+    function drawMap() {
+      const map = maps[player.mapIndex];
+      const grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grd.addColorStop(0, map.color[0]);
+      grd.addColorStop(1, map.color[1]);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      for (let x = 0; x < canvas.width; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      // player
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(player.x * 32 + 16, player.y * 32 + 16, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // boss indicator
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.4)';
+      ctx.fillRect(canvas.width - 140, 16, 124, 46);
+      ctx.fillStyle = '#ffd7aa';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('보스: 그림자 폭군', canvas.width - 132, 44);
+
+      if (state.mode === 'battle' && state.encounter) drawBattleOverlay();
+    }
+
+    function drawBattleOverlay() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.fillRect(0, canvas.height - 180, canvas.width, 180);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(`VS ${state.encounter.name}`, 24, canvas.height - 140);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(`HP: ${state.encounter.hp} / ${state.encounter.maxHp}`, 24, canvas.height - 112);
+
+      const hpRatio = Math.max(0, state.encounter.hp) / state.encounter.maxHp;
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(24, canvas.height - 100, 220, 14);
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(24, canvas.height - 100, 220 * hpRatio, 14);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`플레이어 HP: ${player.hp} / ${player.maxHp}`, 24, canvas.height - 70);
+    }
+
+    function exploreStep(dx, dy) {
+      if (state.mode !== 'explore') return;
+      player.x = Math.max(0, Math.min(18, player.x + dx));
+      player.y = Math.max(0, Math.min(13, player.y + dy));
+      state.stepCount += 1;
+      enqueue(`(${player.x}, ${player.y})로 이동`);
+      maybeEncounter();
+      flushMessages();
+      updateHud();
+    }
+
+    function maybeEncounter() {
+      const map = maps[player.mapIndex];
+      if (Math.random() < map.encounterRate) {
+        startEncounter();
+        addToDex(state.encounter.name, false);
+      }
+    }
+
+    function tick() {
+      drawMap();
+      requestAnimationFrame(tick);
+    }
+
+    // Input
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') exploreStep(0, -1);
+      if (e.key === 'ArrowDown') exploreStep(0, 1);
+      if (e.key === 'ArrowLeft') exploreStep(-1, 0);
+      if (e.key === 'ArrowRight') exploreStep(1, 0);
+    });
+
+    controls.attackBtn.onclick = () => state.mode === 'battle' ? attack(1) : log('전투 중이 아닙니다.');
+    controls.skillBtn.onclick = () => state.mode === 'battle' ? skillStrike() : log('전투 중이 아닙니다.');
+    controls.captureBtn.onclick = () => state.mode === 'battle' ? attemptCapture() : log('전투 중이 아닙니다.');
+    controls.potionBtn.onclick = () => usePotion();
+    controls.runBtn.onclick = () => state.mode === 'battle' ? attemptRun() : log('전투 중이 아닙니다.');
+    controls.mapBtn.onclick = () => changeMap();
+
+    panels.dexTab.onclick = () => {
+      panels.dexPanel.classList.remove('hidden');
+      panels.shopPanel.classList.add('hidden');
+    };
+    panels.shopTab.onclick = () => {
+      panels.shopPanel.classList.remove('hidden');
+      panels.dexPanel.classList.add('hidden');
+    };
+
+    function init() {
+      log('화살표 키로 이동하며 몬스터를 탐험하세요.');
+      log('포획 오브로 몬스터를 잡아 도감을 완성해보세요!');
+      renderDex();
+      renderShop();
+      updateHud();
+      tick();
+    }
+
+    init();
+  </script>
+</body>
+</html>
