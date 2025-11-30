@@ -1,0 +1,338 @@
+import pygame
+import sys
+import math
+import random
+
+pygame.init()
+
+# 화면 설정
+WIDTH, HEIGHT = 500, 700
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("점프맵 무한 모드")
+clock = pygame.time.Clock()
+
+# 색
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 100, 100)
+BLUE = (100, 150, 255)
+GRAY = (200, 200, 200)
+GOLD = (255, 215, 0)
+
+# 코인 사운드
+coin_sound = pygame.mixer.Sound("coin.wav")
+coin_sound.set_volume(0.4)
+
+# 전역 스킨/플레이어 색
+player_color = (100, 150, 255)
+skins = {
+    "blue": (100, 150, 255),
+    "red": (255, 80, 80),
+    "gold": (255, 220, 0)
+}
+skin_price = {"red": 100, "gold": 300}
+
+# ----------------------------
+# Player 클래스
+# ----------------------------
+class Player:
+    def __init__(self):
+        self.x = WIDTH // 2
+        self.y = HEIGHT - 50
+        self.size = 30
+        self.velocity_y = 0
+        self.on_ground = False
+
+    def update(self):
+        self.velocity_y += 0.4
+        self.y += self.velocity_y
+
+        if self.y > HEIGHT - self.size:
+            self.y = HEIGHT - self.size
+            self.velocity_y = 0
+            self.on_ground = True
+
+    def jump(self):
+        if self.on_ground:
+            self.velocity_y = -10
+            self.on_ground = False
+
+    def draw(self):
+        pygame.draw.rect(screen, player_color, (self.x, self.y, self.size, self.size))
+
+# ----------------------------
+# Obstacle 클래스
+# ----------------------------
+class Obstacle:
+    def __init__(self, x, y, w, h, type="static"):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.type = type
+        self.angle = 0
+        self.active = True
+        self.timer = 0
+
+    def update(self, difficulty):
+        t = pygame.time.get_ticks() / 500
+
+        speed = min(2 + difficulty*0.1, 8)
+
+        if self.type == "move_lr":
+            self.x += math.sin(t) * speed
+        elif self.type == "move_ud":
+            self.y += math.sin(t) * speed
+        elif self.type == "rotate":
+            self.angle += 5 + difficulty
+        elif self.type == "falling":
+            self.y += 5 + difficulty*0.5
+            if self.y > HEIGHT:
+                self.y = -100
+                self.x = random.randint(50, WIDTH-50)
+        elif self.type == "vanish":
+            if not self.active:
+                self.timer += 1
+                if self.timer > 30:
+                    self.h = 0
+        elif self.type == "wind":
+            pass
+        elif self.type == "laser":
+            if int(t) % 2 == 0:
+                self.active = True
+            else:
+                self.active = False
+        elif self.type == "rotating_bar":
+            self.angle += 3 + difficulty*0.5
+
+    def draw(self):
+        if self.type == "rotate":
+            pygame.draw.circle(screen, RED, (int(self.x), int(self.y)), self.w)
+        elif self.type == "laser":
+            if self.active:
+                pygame.draw.rect(screen, RED, (self.x, self.y, self.w, self.h))
+        elif self.type == "rotating_bar":
+            length = 100
+            end_x = self.x + math.cos(math.radians(self.angle)) * length
+            end_y = self.y + math.sin(math.radians(self.angle)) * length
+            pygame.draw.line(screen, RED, (self.x, self.y), (end_x, end_y), 8)
+        elif self.type == "wind":
+            pygame.draw.rect(screen, (150, 200, 255), (self.x, self.y, self.w, self.h))
+        else:
+            pygame.draw.rect(screen, RED, (self.x, self.y, self.w, self.h))
+
+    def collides(self, px, py, psize):
+        if self.type == "laser" and not self.active:
+            return False
+        rect_player = pygame.Rect(px, py, psize, psize)
+        rect_obs = pygame.Rect(self.x, self.y, self.w, self.h)
+        return rect_player.colliderect(rect_obs)
+
+# ----------------------------
+# Coin 클래스
+# ----------------------------
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.size = 15
+        self.collected = False
+        self.angle = 0
+
+    def update(self):
+        self.angle += 10
+        if self.angle >= 360:
+            self.angle = 0
+
+    def draw(self):
+        if not self.collected:
+            scale = abs(math.sin(math.radians(self.angle)))
+            width = max(5, int(self.size * scale))
+            height = self.size
+            pygame.draw.ellipse(screen, GOLD, (self.x - width, self.y - height, width*2, height*2))
+
+    def collides(self, px, py, psize):
+        if self.collected:
+            return False
+        rect_player = pygame.Rect(px, py, psize, psize)
+        rect_coin = pygame.Rect(self.x - self.size, self.y - self.size, self.size*2, self.size*2)
+        return rect_player.colliderect(rect_coin)
+
+# ----------------------------
+# 장애물 생성 (무한 단계)
+# ----------------------------
+def create_obstacles(difficulty):
+    obs = []
+
+    num_static = min(3 + difficulty // 2, 10)
+    num_move = min(difficulty // 2, 5)
+    num_falling = min(difficulty // 3, 5)
+    num_rotate = min(difficulty // 3, 3)
+    num_laser = min(difficulty // 4, 3)
+
+    for i in range(num_static):
+        x = 50 + (i*100) % (WIDTH-80)
+        y = HEIGHT - 100 - i*100
+        obs.append(Obstacle(x, y, 80, 20, "static"))
+
+    for i in range(num_move):
+        x = 50 + (i*120) % (WIDTH-80)
+        y = HEIGHT - 200 - i*150
+        obs.append(Obstacle(x, y, 80, 20, "move_lr"))
+
+    for i in range(num_falling):
+        x = 50 + (i*100) % (WIDTH-40)
+        y = -50*i
+        obs.append(Obstacle(x, y, 40, 40, "falling"))
+
+    for i in range(num_rotate):
+        x = 100 + (i*150) % (WIDTH-50)
+        y = HEIGHT - 300 - i*200
+        obs.append(Obstacle(x, y, 20, 20, "rotate"))
+
+    for i in range(num_laser):
+        x = 50 + (i*200) % (WIDTH-150)
+        y = HEIGHT - 250 - i*200
+        obs.append(Obstacle(x, y, 150, 10, "laser"))
+
+    return obs
+
+# ----------------------------
+# 코인 생성 (무한 단계)
+# ----------------------------
+def create_coins(difficulty):
+    coins = []
+    num_coins = min(3 + difficulty // 2, 10)
+    for i in range(num_coins):
+        x = 50 + (i*100) % (WIDTH-50)
+        y = HEIGHT - 150 - i*120
+        coins.append(Coin(x, y))
+    return coins
+
+# ----------------------------
+# 스테이지 클리어 화면
+# ----------------------------
+def stage_clear_screen(score):
+    font = pygame.font.SysFont(None, 60)
+    small = pygame.font.SysFont(None, 40)
+    timer = 60
+    while timer > 0:
+        screen.fill((230, 255, 230))
+        text = font.render("Stage Clear!", True, (0, 120, 0))
+        score_text = small.render(f"+100 보너스!", True, (0, 120, 0))
+        screen.blit(text, (120, 200))
+        screen.blit(score_text, (150, 300))
+        pygame.display.flip()
+        timer -= 1
+        pygame.time.delay(16)
+
+# ----------------------------
+# 상점 화면
+# ----------------------------
+def shop_screen(total_score):
+    global player_color
+    font = pygame.font.SysFont(None, 40)
+    while True:
+        screen.fill((240, 240, 240))
+        text = font.render("상점 - 스킨 구매", True, (0, 0, 0))
+        screen.blit(text, (150, 50))
+        y = 150
+        for skin, price in skin_price.items():
+            pygame.draw.rect(screen, skins[skin], (50, y, 40, 40))
+            label = font.render(f"{skin} - {price}점", True, (0, 0, 0))
+            screen.blit(label, (120, y))
+            y += 80
+        score_label = font.render(f"보유 점수: {total_score}", True, (0, 0, 0))
+        screen.blit(score_label, (150, 500))
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = pygame.mouse.get_pos()
+                y = 150
+                for skin, price in skin_price.items():
+                    if 50 <= mx <= 90 and y <= my <= y+40:
+                        if total_score >= price:
+                            total_score -= price
+                            player_color = skins[skin]
+                        return total_score
+                    y += 80
+
+# ----------------------------
+# 게임 루프
+# ----------------------------
+def game_loop(difficulty):
+    player = Player()
+    obstacles = create_obstacles(difficulty)
+    coins = create_coins(difficulty)
+    finish_line = 50
+    score = 0
+    highest_y = player.y
+
+    while True:
+        screen.fill(WHITE)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    player.jump()
+
+        # 플레이어 이동
+        player.update()
+
+        # 장애물 업데이트 & 충돌
+        for obs in obstacles:
+            obs.update(difficulty)
+            obs.draw()
+            if obs.collides(player.x, player.y, player.size):
+                return score  # 실패
+
+        # 코인 업데이트 & 충돌
+        for coin in coins:
+            coin.update()
+            coin.draw()
+            if coin.collides(player.x, player.y, player.size):
+                coin.collected = True
+                score += 10
+                coin_sound.play()
+
+        # 높이에 따라 점수 증가
+        if player.y < highest_y:
+            highest_y = player.y
+            score += 1
+
+        player.draw()
+
+        # 목표 도달
+        if player.y < finish_line:
+            return score + 100
+
+        # 점수 표시
+        font = pygame.font.SysFont(None, 40)
+        text = font.render(f"단계: {difficulty}", True, BLACK)
+        score_text = font.render(f"점수: {score}", True, BLACK)
+        screen.blit(text, (10, 10))
+        screen.blit(score_text, (10, 50))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+# ----------------------------
+# 메인 루프 (무한 단계)
+# ----------------------------
+difficulty = 1
+total_score = 0
+
+while True:
+    stage_score = game_loop(difficulty)
+    total_score += stage_score
+
+    stage_clear_screen(stage_score)
+    total_score = shop_screen(total_score)
+
+    difficulty += 1
+    print(f"현재 단계: {difficulty}, 총점: {total_score}")
