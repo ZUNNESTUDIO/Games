@@ -50,6 +50,26 @@
       font-weight: bold;
       display: none;
     }
+
+    #resultScreen {
+      display: none;
+      margin-top: 30px;
+    }
+
+    #resultScreen h2 {
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+
+    #restartButton {
+      padding: 12px 28px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: #6cc4ff;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -66,11 +86,18 @@
   <canvas id="gameCanvas" width="700" height="400"></canvas>
   <div id="info">점프 횟수: 0 / 30</div>
 
+  <div id="resultScreen">
+    <h2 id="resultMessage"></h2>
+    <button id="restartButton" onclick="restartGame()">다시 시작</button>
+  </div>
+
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const startScreen = document.getElementById('startScreen');
     const info = document.getElementById('info');
+    const resultScreen = document.getElementById('resultScreen');
+    const resultMessage = document.getElementById('resultMessage');
 
     const DIFFICULTY_SETTINGS = {
       easy: { speedMin: 3, speedMax: 4, respawnMin: 650 },
@@ -80,6 +107,7 @@
 
     const keys = {};
     let difficulty = null;
+    let currentLevel = null;
     let miyawol;
     let obstacle;
     let jumpCount = 0;
@@ -143,10 +171,12 @@
 
     function startGame(level) {
       difficulty = DIFFICULTY_SETTINGS[level];
+      currentLevel = level;
       initializeGame();
       startScreen.style.display = 'none';
       canvas.style.display = 'block';
       info.style.display = 'block';
+      resultScreen.style.display = 'none';
       info.textContent = `점프 횟수: ${jumpCount} / 30`;
       requestAnimationFrame(update);
     }
@@ -192,8 +222,7 @@
       info.textContent = `점프 횟수: ${jumpCount} / 30`;
 
       if (jumpCount >= 30) {
-        alert('🎉 게임 클리어! 미야올이 점프 30번 성공했습니다!');
-        gameOver = true;
+        endGame('🎉 게임 클리어! 미야올이 점프 30번 성공했습니다!');
       }
     }
 
@@ -230,8 +259,7 @@
         miyawol.y + miyawol.height > obstacle.y;
 
       if (isColliding) {
-        alert('💥 미야올이 장애물에 부딪혔습니다! 게임 오버!');
-        gameOver = true;
+        endGame('💥 미야올이 장애물에 부딪혔습니다! 게임 오버!');
         return;
       }
 
@@ -249,6 +277,29 @@
 
       ctx.fillStyle = '#444';
       ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    }
+
+    function endGame(message) {
+      gameOver = true;
+      info.style.display = 'none';
+      resultMessage.textContent = message;
+      resultScreen.style.display = 'block';
+    }
+
+    function restartGame() {
+      if (!currentLevel) {
+        startScreen.style.display = 'block';
+        canvas.style.display = 'none';
+        resultScreen.style.display = 'none';
+        return;
+      }
+
+      initializeGame();
+      resultScreen.style.display = 'none';
+      canvas.style.display = 'block';
+      info.style.display = 'block';
+      info.textContent = `점프 횟수: ${jumpCount} / 30`;
+      requestAnimationFrame(update);
     }
   </script>
 </body>
