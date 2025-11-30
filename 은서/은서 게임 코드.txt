@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>점프하는 게임 - 미야올</title>
+<style>
+    body { 
+        margin: 0; 
+        background: #d7f0ff; 
+        overflow: hidden;
+        font-family: sans-serif;
+    }
+    #gameCanvas {
+        background: #a6e3ff;
+        display: block;
+        margin: 0 auto;
+        border: 3px solid #333;
+    }
+    #info {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 22px;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="700" height="400"></canvas>
+<div id="info">점프 횟수: 0 / 30</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// --- 게임 상태 변수 ---
+let miyawol = {
+    x: 100,
+    y: 300,
+    width: 40,
+    height: 60,
+    vy: 0,
+    gravity: 0.6,
+    onGround: true
+};
+
+let obstacle = {
+    x: 700,
+    y: 330,
+    width: 40,
+    height: 40,
+    speed: 5
+};
+
+let jumpCount = 0;
+let gameOver = false;
+
+// --- 키 입력 ---
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// --- 점프 ---
+function jump() {
+    if (miyawol.onGround) {
+        miyawol.vy = -12;
+        miyawol.onGround = false;
+        jumpCount++;
+        document.getElementById("info").innerText = `점프 횟수: ${jumpCount} / 30`;
+
+        if (jumpCount >= 30) {
+            alert("🎉 게임 클리어! 미야올이 점프 30번 성공했습니다!");
+            gameOver = true;
+        }
+    }
+}
+
+// --- 게임 루프 ---
+function update() {
+    if (gameOver) return;
+
+    // 좌우 이동
+    if (keys["ArrowLeft"]) miyawol.x -= 5;
+    if (keys["ArrowRight"]) miyawol.x += 5;
+
+    // 점프
+    if (keys["ArrowUp"]) jump();
+
+    // 중력 적용
+    miyawol.y += miyawol.vy;
+    miyawol.vy += miyawol.gravity;
+
+    if (miyawol.y > 300) {
+        miyawol.y = 300;
+        miyawol.vy = 0;
+        miyawol.onGround = true;
+    }
+
+    // 장애물 이동
+    obstacle.x -= obstacle.speed;
+    if (obstacle.x < -50) {
+        obstacle.x = 700;
+        obstacle.speed = 4 + Math.random() * 4; // 난이도 미세 증가
+    }
+
+    // 충돌 체크
+    if (miyawol.x < obstacle.x + obstacle.width &&
+        miyawol.x + miyawol.width > obstacle.x &&
+        miyawol.y < obstacle.y + obstacle.height &&
+        miyawol.y + miyawol.height > obstacle.y) {
+
+        alert("💥 미야올이 장애물에 부딪혔습니다! 게임 오버!");
+        gameOver = true;
+    }
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>점프하는 게임 - 미야올</title>
+<style>
+    body { margin: 0; background: #d7f0ff; font-family: sans-serif; text-align:center; }
+
+    #startScreen { margin-top: 80px; }
+    .difficulty-btn {
+        display: block; margin: 20px auto; padding: 15px 40px;
+        font-size: 22px; font-weight: bold;
+        border-radius: 10px; cursor: pointer; border: none;
+    }
+    .easy { background: #b6f7a5; }
+    .normal { background: #ffe58f; }
+    .hard { background: #ff9f9f; }
+
+    #gameCanvas {
+        background: #a6e3ff;
+        display: none;
+        margin: 20px auto;
+        border: 3px solid #333;
+    }
+    #info {
+        font-size: 22px;
+        font-weight: bold;
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<!-- 난이도 선택 화면 -->
+<div id="startScreen">
+    <h1>🎮 점프하는 게임 — 미야올</h1>
+    <h2>난이도를 선택하세요</h2>
+
+    <button class="difficulty-btn easy" onclick="startGame('easy')">초보 (매우 단순)</button>
+    <button class="difficulty-btn normal" onclick="startGame('normal')">중수 (조금 복잡)</button>
+    <button class="difficulty-btn hard" onclick="startGame('hard')">고수 (매우 복잡)</button>
+</div>
+
+<!-- 게임 화면 -->
+<canvas id="gameCanvas" width="700" height="400"></canvas>
+<div id="info">점프 횟수: 0 / 30</div>
+
+<script>
+// ------------------------------
+// 미야올: 귀여운 고양이를 캔버스에 직접 그림
+// ------------------------------
+function drawCat(ctx, x, y, w, h) {
+    const headRadius = w * 0.4;
+
+    // 몸
+    ctx.fillStyle = "#ffc7c7";
+    ctx.fillRect(x + w*0.2, y + h*0.5, w*0.6, h*0.5);
+
+    // 머리
+    ctx.beginPath();
+    ctx.fillStyle = "#ffb6c1";
+    ctx.arc(x + w/2, y + h*0.35, headRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 귀 (좌)
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.35, y + h*0.18);
+    ctx.lineTo(x + w*0.25, y + h*0.32);
+    ctx.lineTo(x + w*0.45, y + h*0.32);
+    ctx.fillStyle = "#ff9eb2";
+    ctx.fill();
+
+    // 귀 (우)
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.65, y + h*0.18);
+    ctx.lineTo(x + w*0.55, y + h*0.32);
+    ctx.lineTo(x + w*0.75, y + h*0.32);
+    ctx.fill();
+
+    // 눈
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(x + w*0.42, y + h*0.35, w*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x + w*0.58, y + h*0.35, w*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // 코
+    ctx.fillStyle = "#ff6f91";
+    ctx.beginPath();
+    ctx.arc(x + w*0.5, y + h*0.42, w*0.03, 0, Math.PI*2);
+    ctx.fill();
+
+    // 입
+    ctx.strokeStyle = "#ff6f91";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.5, y + h*0.45);
+    ctx.lineTo(x + w*0.48, y + h*0.48);
+    ctx.moveTo(x + w*0.5, y + h*0.45);
+    ctx.lineTo(x + w*0.52, y + h*0.48);
+    ctx.stroke();
+}
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// 난이도 값
+let difficulty = null;
+
+// 게임 변수
+let miyawol, obstacle, jumpCount, gameOver, keys;
+
+const DIFFICULTY_SETTINGS = {
+    easy:   { speedMin: 3, speedMax: 4, respawnMin: 650 },
+    normal: { speedMin: 4, speedMax: 6, respawnMin: 550 },
+    hard:   { speedMin: 6, speedMax: 9, respawnMin: 450 }
+};
+
+function startGame(selected) {
+    difficulty = DIFFICULTY_SETTINGS[selected];
+
+    document.getElementById("startScreen").style.display = "none";
+    canvas.style.display = "block";
+    document.getElementById("info").style.display = "block";
+
+    initializeGame();
+    update();
+}
+
+function initializeGame() {
+    miyawol = {
+        x: 100, y: 300,
+        width: 60, height: 80,
+        vy: 0, gravity: 0.6,
+        onGround: true
+    };
+
+    obstacle = {
+        x: 700,
+        y: 330,
+        width: 40,
+        height: 40,
+        speed: getRandomSpeed()
+    };
+
+    jumpCount = 0;
+    gameOver = false;
+    keys = {};
+
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+}
+
+function getRandomSpeed() {
+    return difficulty.speedMin + Math.random() * (difficulty.speedMax - difficulty.speedMin);
+}
+
+function jump() {
+    if (miyawol.onGround) {
+        miyawol.vy = -12;
+        miyawol.onGround = false;
+        jumpCount++;
+
+        document.getElementById("info").innerText = `점프 횟수: ${jumpCount} / 30`;
+
+        if (jumpCount >= 30) {
+            alert("🎉 게임 클리어! 미야올이 점프 30번 성공했습니다!");
+            gameOver = true;
+        }
+    }
+}
+
+function update() {
+    if (gameOver) return;
+
+    if (keys["ArrowLeft"]) miyawol.x -= 5;
+    if (keys["ArrowRight"]) miyawol.x += 5;
+    if (keys["ArrowUp"]) jump();
+
+    miyawol.y += miyawol.vy;
+    miyawol.vy += miyawol.gravity;
+
+    if (miyawol.y > 300) {
+        miyawol.y = 300;
+        miyawol.vy = 0;
+        miyawol.onGround = true;
+    }
+
+    obstacle.x -= obstacle.speed;
+
+    if (obstacle.x < -50) {
+        obstacle.x = difficulty.respawnMin + Math.random() * 200;
+        obstacle.speed = getRandomSpeed();
+    }
+
+    // 충돌 체크
+    if (miyawol.x < obstacle.x + obstacle.width &&
+        miyawol.x + miyawol.width > obstacle.x &&
+        miyawol.y < obstacle.y + obstacle.height &&
+        miyawol.y + miyawol.height > obstacle.y) {
+        alert("💥 미야올이 장애물에 부딪혔습니다! 게임 오버!");
+        gameOver = true;
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 🐱 고양이 미야올 그리기
+    drawCat(ctx, miyawol.x, miyawol.y, miyawol.width, miyawol.height);
+
+    // 장애물
+    ctx.fillStyle = "#444";
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+}
+</script>
+
+</body>
+</html>
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+// --- 그리기 ---
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 미야올 (캐릭터)
+    ctx.fillStyle = "#ff6666";  
+    ctx.fillRect(miyawol.x, miyawol.y, miyawol.width, miyawol.height);
+
+    // 장애물
+    ctx.fillStyle = "#444";
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+}
+
+update();
+</script>
+
+</body>
+</html>
