@@ -105,6 +105,8 @@ function applyEventVisual() {
 function showEventBanner() {
     const b = document.getElementById("eventBanner");
 
+    if (!b) return;
+
     b.textContent = "";
     b.style.display = currentEvent ? "block" : "none";
 
