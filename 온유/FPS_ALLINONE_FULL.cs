@@ -329,7 +329,8 @@ public class FPS_ALLINONE_FULL : MonoBehaviour
     void EnemyShoot()
     {
         Vector3 dir = (player.transform.position + Vector3.up * 1.5f) - enemy.transform.position;
-        if (Physics.Raycast(enemy.transform.position + Vector3.up * 1.5f, dir.normalized, out RaycastHit hit, enemyShootDist))
+        Vector3 enemyEyePos = enemy.transform.position + Vector3.up * 1.5f;
+        if (Physics.Raycast(enemyEyePos, dir.normalized, out RaycastHit hit, enemyShootDist))
         {
             if (hit.collider.CompareTag("Player")) PlayerTakeDamage((int)enemyGunDamage);
         }
