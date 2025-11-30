@@ -16,5 +16,26 @@ Unity로 제작한 1인칭 슈팅(FPS) 게임입니다.
 - C#
 - NavMesh AI
 
+## 스크립트 구조
+```
+Scripts/
+  Player/
+    PlayerMovement.cs
+    PlayerLook.cs
+    PlayerWeaponController.cs
+    PlayerInventory.cs
+  Weapons/
+    Weapon.cs
+    Gun.cs
+    Grenade.cs
+  Game/
+    GameManager.cs
+    MoneySystem.cs
+    DifficultyManager.cs
+    WeaponShop.cs
+    MapSelector.cs
+    IntroText.cs
+```
+
 ---
 제작: 찬솔 | 중앙초등학교 | 지현쌤 | 젼느 스튜디오
