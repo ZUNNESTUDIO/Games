@@ -64,7 +64,7 @@ function checkEventDay() {
     else currentEvent = null;
 
     applyEventVisual();
-    if (currentEvent) showEventBanner();
+    showEventBanner();
     if (currentEvent) showEventBox();
 }
 
@@ -104,6 +104,13 @@ function applyEventVisual() {
 //--------------------------------------------------
 function showEventBanner() {
     const b = document.getElementById("eventBanner");
+
+    if (!b) return;
+
+    b.textContent = "";
+    b.style.display = currentEvent ? "block" : "none";
+
+    if (!currentEvent) return;
 
     if (currentEvent==="halloween")
         b.textContent = "🎃 할로윈 이벤트! 스페셜 손님 확률 증가!";
