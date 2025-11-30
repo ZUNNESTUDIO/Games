@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>도경 - 로라 마라탕 게임</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div id="lora" aria-hidden="true">🥣</div>
+      <div>
+        <h1>도경 - 로라 마라탕</h1>
+        <p>레스토랑을 운영하며 이벤트 손님을 맞이해 보세요!</p>
+      </div>
+    </div>
+    <div class="stats">
+      <span>머니: <strong id="money">0</strong></span>
+      <span>보석: <strong id="gems">0</strong></span>
+    </div>
+  </header>
+
+  <section class="event">
+    <div id="eventBanner" class="banner">오늘은 일반 영업 중!</div>
+    <div id="eventBox" class="event-box" style="display:none;">
+      <p>이벤트 상자가 도착했어요!</p>
+      <button type="button" onclick="openEventBox()">상자 열기</button>
+    </div>
+  </section>
+
+  <main class="layout">
+    <section class="panel ingredients">
+      <h2>재료 선택</h2>
+      <p class="hint">재료를 클릭하여 추가하거나 제거하세요.</p>
+      <div id="ingredients" class="ingredient-grid"></div>
+      <div class="spicy-control">
+        <label for="spicyLevel">맵기 조절: <span id="spicyText">3단계</span></label>
+        <input type="range" id="spicyLevel" min="0" max="5" value="3" />
+      </div>
+    </section>
+
+    <section class="panel orders">
+      <h2>손님 주문</h2>
+      <div class="actions">
+        <button type="button" onclick="newCustomer()">새 손님 받기</button>
+        <button type="button" onclick="serve()">마라탕 제공</button>
+      </div>
+      <div id="customerArea" class="customer">손님을 맞이해 주세요!</div>
+    </section>
+
+    <section class="panel games">
+      <h2>미니게임: 카드 짝맞추기</h2>
+      <div class="actions">
+        <button type="button" onclick="startMiniGame()">게임 시작</button>
+      </div>
+      <div id="miniGame" class="mini-grid"></div>
+    </section>
+  </main>
+
+  <section class="panel event-games">
+    <div class="header-row">
+      <h2>이벤트 전용 미니게임</h2>
+      <button type="button" onclick="startEventMiniGame()">시작하기</button>
+    </div>
+    <div id="eventGameArea" class="event-area">이벤트 날에 특별한 게임을 즐겨보세요!</div>
+  </section>
+
+  <footer class="footer">
+    <p>제작: 도경 | 중앙초등학교 | 지현쌤 | 젼느 스튜디오</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
