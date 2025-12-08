@@ -31,16 +31,29 @@ body {
 
 .brand { display: flex; gap: 12px; align-items: center; }
 
-#lora {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+.mini-avatar {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: #fff;
+  border: 2px solid #ffd7ca;
+  box-shadow: 0 8px 18px rgba(255, 122, 92, 0.2);
   display: grid;
   place-items: center;
-  font-size: 36px;
-  background: linear-gradient(135deg, var(--hat-color, #ff9a7a), var(--clothes-color, #ffb86c));
-  box-shadow: 0 8px 20px rgba(255, 122, 92, 0.25);
+  overflow: hidden;
 }
+
+.mini-face { font-size: 32px; z-index: 3; }
+.mini-hat, .mini-hair {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  z-index: 1;
+  transition: background 0.2s ease;
+}
+.mini-hair { top: 16px; height: 48px; background: var(--hair-color, #f2c9a0); }
+.mini-hat { background: var(--hat-color, #ffd8e6); z-index: 2; clip-path: ellipse(70% 45% at 50% 20%); }
 
 .stats {
   display: flex;
@@ -53,7 +66,120 @@ body {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
 }
 
-.event { padding: 16px 24px; }
+.character-stage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 20px 24px;
+  align-items: center;
+}
+
+.character-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.05);
+  display: grid;
+  place-items: center;
+}
+
+.character-art {
+  position: relative;
+  width: 220px;
+  height: 240px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #fff8f4 0%, #ffe4d7 70%);
+  transition: transform 0.2s ease;
+}
+.character-art:hover { transform: translateY(-4px); }
+
+.char-shadow {
+  position: absolute;
+  width: 160px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.08);
+  filter: blur(22px);
+  border-radius: 50%;
+  bottom: 10px;
+  left: 30px;
+}
+
+.char-body {
+  position: absolute;
+  width: 140px;
+  height: 160px;
+  background: linear-gradient(180deg, #ffdec8, #ffc4a0);
+  border-radius: 70px 70px 60px 60px;
+  left: 40px;
+  bottom: 24px;
+}
+
+.char-outfit {
+  position: absolute;
+  width: 150px;
+  height: 110px;
+  background: linear-gradient(180deg, var(--clothes-color, #ffb377), #ff9c6e);
+  left: 35px;
+  bottom: 18px;
+  border-radius: 80px 80px 40px 40px;
+  box-shadow: inset 0 6px 12px rgba(255, 255, 255, 0.5);
+}
+
+.char-hair {
+  position: absolute;
+  width: 170px;
+  height: 140px;
+  background: var(--hair-color, #f2c9a0);
+  top: 30px;
+  left: 25px;
+  border-radius: 90px 90px 70px 70px;
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.char-hat {
+  position: absolute;
+  width: 160px;
+  height: 80px;
+  background: var(--hat-color, #ffd8e6);
+  top: 16px;
+  left: 30px;
+  border-radius: 100px 100px 40px 40px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+.char-face {
+  position: absolute;
+  top: 86px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 56px;
+  z-index: 3;
+}
+
+.stage-info h2 { margin: 0 0 6px; }
+.stage-info p { margin: 0 0 10px; color: var(--muted); }
+
+.progress-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.progress-label { font-weight: 700; }
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #ffe9df;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff8fb1, #ff6f91);
+  transition: width 0.25s ease;
+}
+
+.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.event { padding: 0 24px 16px; }
 
 .banner {
   background: linear-gradient(90deg, #ff9f68, #ff6f91);
@@ -82,8 +208,8 @@ body {
 .avatar-panel { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .avatar-preview {
   position: relative;
-  width: 180px;
-  height: 200px;
+  width: 200px;
+  height: 220px;
   border-radius: 20px;
   background: linear-gradient(180deg, #fff8f4, #ffe9dd);
   border: 1px solid var(--border);
@@ -91,42 +217,49 @@ body {
   overflow: hidden;
   --hat-color: #ffd8e6;
   --clothes-color: #ffb377;
+  --hair-color: #f2c9a0;
 }
 
-.avatar-preview::before {
-  content: "";
+.avatar-body {
   position: absolute;
-  top: 18px;
-  left: 32px;
-  width: 116px;
-  height: 40px;
+  inset: 30px 24px 34px 24px;
+  background: linear-gradient(180deg, #ffdec8, #ffc4a0);
+  border-radius: 20px 20px 24px 24px;
+}
+.avatar-hair {
+  position: absolute;
+  inset: 26px 12px 92px 12px;
+  background: var(--hair-color);
+  border-radius: 28px 28px 18px 18px;
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.05);
+}
+.avatar-hat {
+  position: absolute;
+  height: 70px;
+  top: 12px;
+  left: 24px;
+  right: 24px;
   background: var(--hat-color);
-  border-radius: 20px 20px 12px 12px;
-  box-shadow: 0 10px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 30px 30px 18px 18px;
+  box-shadow: 0 10px 18px rgba(0,0,0,0.12);
 }
-
-.avatar-preview::after {
-  content: "";
+.avatar-outfit {
   position: absolute;
-  bottom: 18px;
-  left: 26px;
-  width: 128px;
-  height: 78px;
-  background: linear-gradient(180deg, var(--clothes-color), rgba(0, 0, 0, 0.08));
-  border-radius: 18px;
-  box-shadow: inset 0 3px 10px rgba(255, 255, 255, 0.6);
+  inset: 120px 20px 22px 20px;
+  background: linear-gradient(180deg, var(--clothes-color), #f17c53);
+  border-radius: 18px 18px 24px 24px;
+  box-shadow: inset 0 4px 8px rgba(255,255,255,0.6);
 }
-
 .avatar-face {
   position: absolute;
-  top: 70px;
+  top: 96px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 48px;
-  z-index: 1;
+  z-index: 3;
 }
 
-.wardrobe { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wardrobe { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .wardrobe-group { background: #fff6ef; border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
 .wardrobe-group h3 { margin: 0 0 6px; font-size: 15px; }
 .wardrobe-btn { width: 100%; margin-bottom: 6px; }
@@ -190,8 +323,11 @@ button {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(255, 122, 92, 0.35);
+  transition: transform 0.1s ease, filter 0.1s ease;
 }
 button:hover { filter: brightness(0.97); }
+button:active { transform: scale(0.98); }
+button:disabled { background: #c2c2c2; box-shadow: none; cursor: not-allowed; }
 
 .customer {
   min-height: 96px;
@@ -290,11 +426,19 @@ button:hover { filter: brightness(0.97); }
 /* 코스튬 색상 */
 .hat-basic { --hat-color: #ffd8e6; }
 .hat-strawberry { --hat-color: #ff7a9e; }
-.hat-green { --hat-color: #7fcf8c; }
+.hat-banana { --hat-color: #ffe56c; }
+.hat-watermelon { --hat-color: #6fd58c; }
+.hat-grape { --hat-color: #b998ff; }
 
 .clothes-basic { --clothes-color: #ffb377; }
 .clothes-blue { --clothes-color: #6fa8dc; }
 .clothes-coral { --clothes-color: #ff9f7e; }
+.clothes-mint { --clothes-color: #7be0c3; }
+
+.hair-bob { --hair-color: #f2c9a0; }
+.hair-long { --hair-color: #dba56f; }
+.hair-twin { --hair-color: #b6764b; }
+.hair-ash { --hair-color: #c7c6c4; }
 
 .footer {
   text-align: center;

@@ -9,7 +9,11 @@
 <body>
   <header class="top">
     <div class="brand">
-      <div id="lora" aria-hidden="true">🥣</div>
+      <div id="lora" class="mini-avatar hat-strawberry clothes-basic hair-bob" aria-hidden="true">
+        <div class="mini-hat"></div>
+        <div class="mini-face">😊</div>
+        <div class="mini-hair"></div>
+      </div>
       <div>
         <h1>도경 - 로라 마라탕</h1>
         <p>레스토랑을 운영하며 이벤트 손님을 맞이해 보세요!</p>
@@ -18,8 +22,37 @@
     <div class="stats">
       <span>머니: <strong id="money">0</strong></span>
       <span>보석: <strong id="gems">0</strong></span>
+      <span>레벨: <strong id="level">0</strong></span>
     </div>
   </header>
+
+  <section class="character-stage">
+    <div class="character-card">
+      <div id="heroAvatar" class="character-art hat-strawberry clothes-basic hair-bob">
+        <div class="char-shadow"></div>
+        <div class="char-body"></div>
+        <div class="char-outfit"></div>
+        <div class="char-hair"></div>
+        <div class="char-hat"></div>
+        <div class="char-face">😊</div>
+      </div>
+    </div>
+    <div class="stage-info">
+      <h2>오늘의 로라</h2>
+      <p>상점에서 얻은 코스튬으로 모자, 헤어스타일, 옷을 바꿔보세요. 구매 즉시 외형에 반영됩니다.</p>
+      <div class="progress-row">
+        <div class="progress-label">고객 수: <strong id="customerCount">0</strong> / 다음 레벨까지 <span id="toNext">10</span></div>
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
+      <div class="quick-actions">
+        <button type="button" onclick="newCustomer()">새 손님 받기</button>
+        <button type="button" onclick="serve()">마라탕 제공</button>
+        <button type="button" onclick="startMiniGame()">미니게임</button>
+      </div>
+    </div>
+  </section>
 
   <section class="event">
     <div id="eventBanner" class="banner">오늘은 일반 영업 중!</div>
@@ -32,9 +65,13 @@
   <main class="layout">
     <section class="panel avatar-panel">
       <h2>로라 꾸미기</h2>
-      <p class="hint">상점에서 얻은 코스튬으로 모자와 옷을 바꿔보세요.</p>
-      <div id="avatarPreview" class="avatar-preview hat-basic clothes-basic">
-        <div class="avatar-face" aria-hidden="true">😊</div>
+      <p class="hint">획득한 헤어와 모자, 옷을 조합해 나만의 로라를 만들어 보세요.</p>
+      <div id="avatarPreview" class="avatar-preview hat-strawberry clothes-basic hair-bob">
+        <div class="avatar-body"></div>
+        <div class="avatar-hair"></div>
+        <div class="avatar-hat"></div>
+        <div class="avatar-face">😊</div>
+        <div class="avatar-outfit"></div>
       </div>
       <div class="wardrobe" id="wardrobe"></div>
     </section>
@@ -76,7 +113,9 @@
       <p class="hint">재료와 코스튬을 구매해 가게를 성장시키세요.</p>
       <div class="shop-filters">
         <button type="button" data-category="ingredient" onclick="renderShop('ingredient')">재료 상점</button>
-        <button type="button" data-category="costume" onclick="renderShop('costume')">코스튬 상점</button>
+        <button type="button" data-category="hat" onclick="renderShop('hat')">모자 상점</button>
+        <button type="button" data-category="hair" onclick="renderShop('hair')">헤어 상점</button>
+        <button type="button" data-category="clothes" onclick="renderShop('clothes')">옷 상점</button>
       </div>
       <div id="shopItems" class="shop-grid"></div>
     </section>
