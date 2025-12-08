@@ -30,10 +30,23 @@
   </section>
 
   <main class="layout">
+    <section class="panel avatar-panel">
+      <h2>로라 꾸미기</h2>
+      <p class="hint">상점에서 얻은 코스튬으로 모자와 옷을 바꿔보세요.</p>
+      <div id="avatarPreview" class="avatar-preview hat-basic clothes-basic">
+        <div class="avatar-face" aria-hidden="true">😊</div>
+      </div>
+      <div class="wardrobe" id="wardrobe"></div>
+    </section>
+
     <section class="panel ingredients">
       <h2>재료 선택</h2>
       <p class="hint">재료를 클릭하여 추가하거나 제거하세요.</p>
       <div id="ingredients" class="ingredient-grid"></div>
+      <div class="inventory">
+        <h3>보유 재료</h3>
+        <div id="inventoryList" class="tag-list"></div>
+      </div>
       <div class="spicy-control">
         <label for="spicyLevel">맵기 조절: <span id="spicyText">3단계</span></label>
         <input type="range" id="spicyLevel" min="0" max="5" value="3" />
@@ -56,6 +69,16 @@
       </div>
       <div id="miniGameResult" class="mini-result" aria-live="polite"></div>
       <div id="miniGame" class="mini-grid"></div>
+    </section>
+
+    <section class="panel shop">
+      <h2>상점</h2>
+      <p class="hint">재료와 코스튬을 구매해 가게를 성장시키세요.</p>
+      <div class="shop-filters">
+        <button type="button" data-category="ingredient" onclick="renderShop('ingredient')">재료 상점</button>
+        <button type="button" data-category="costume" onclick="renderShop('costume')">코스튬 상점</button>
+      </div>
+      <div id="shopItems" class="shop-grid"></div>
     </section>
   </main>
 

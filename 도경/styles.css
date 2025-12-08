@@ -38,7 +38,7 @@ body {
   display: grid;
   place-items: center;
   font-size: 36px;
-  background: linear-gradient(135deg, #ff9a7a, #ffb86c);
+  background: linear-gradient(135deg, var(--hat-color, #ff9a7a), var(--clothes-color, #ffb86c));
   box-shadow: 0 8px 20px rgba(255, 122, 92, 0.25);
 }
 
@@ -77,6 +77,69 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
   padding: 0 24px 16px;
+}
+
+.avatar-panel { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.avatar-preview {
+  position: relative;
+  width: 180px;
+  height: 200px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff8f4, #ffe9dd);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 4px 8px rgba(255, 255, 255, 0.8), 0 12px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  --hat-color: #ffd8e6;
+  --clothes-color: #ffb377;
+}
+
+.avatar-preview::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 32px;
+  width: 116px;
+  height: 40px;
+  background: var(--hat-color);
+  border-radius: 20px 20px 12px 12px;
+  box-shadow: 0 10px 16px rgba(0, 0, 0, 0.12);
+}
+
+.avatar-preview::after {
+  content: "";
+  position: absolute;
+  bottom: 18px;
+  left: 26px;
+  width: 128px;
+  height: 78px;
+  background: linear-gradient(180deg, var(--clothes-color), rgba(0, 0, 0, 0.08));
+  border-radius: 18px;
+  box-shadow: inset 0 3px 10px rgba(255, 255, 255, 0.6);
+}
+
+.avatar-face {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 48px;
+  z-index: 1;
+}
+
+.wardrobe { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wardrobe-group { background: #fff6ef; border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+.wardrobe-group h3 { margin: 0 0 6px; font-size: 15px; }
+.wardrobe-btn { width: 100%; margin-bottom: 6px; }
+
+.inventory { margin-top: 10px; }
+.tag-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  background: #eef4ff;
+  color: #2f2f2f;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid #d7e2ff;
+  font-weight: 700;
 }
 
 .panel {
@@ -170,6 +233,20 @@ button:hover { filter: brightness(0.97); }
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
+.shop-filters { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.shop-item {
+  border: 1px solid var(--border);
+  background: #fff7f1;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+}
+.shop-title { font-weight: 800; font-size: 16px; }
+.shop-price { margin: 4px 0; color: #ff6f91; font-weight: 800; }
+.shop-desc { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+.shop-filters button.active { background: #2e74ff; box-shadow: 0 8px 18px rgba(46, 116, 255, 0.25); }
+
 .event-games { margin: 0 24px 24px; }
 .header-row { display: flex; justify-content: space-between; align-items: center; }
 .event-area {
@@ -209,6 +286,15 @@ button:hover { filter: brightness(0.97); }
   background: linear-gradient(135deg, #9ddcff, #5b8cff);
   border-radius: 12px;
 }
+
+/* 코스튬 색상 */
+.hat-basic { --hat-color: #ffd8e6; }
+.hat-strawberry { --hat-color: #ff7a9e; }
+.hat-green { --hat-color: #7fcf8c; }
+
+.clothes-basic { --clothes-color: #ffb377; }
+.clothes-blue { --clothes-color: #6fa8dc; }
+.clothes-coral { --clothes-color: #ff9f7e; }
 
 .footer {
   text-align: center;

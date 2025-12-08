@@ -1,14 +1,14 @@
 //--------------------------------------------------
 // 기본 변수
 //--------------------------------------------------
-let money = 0;
-let gems = 0;
+let money = 800;
+let gems = 12;
 let selectedIngredients = [];
 let currentCustomer = null;
 let currentEvent = null;
 
 // 재료 목록
-const ingredientList = [
+const allIngredients = [
   "푸주",
   "중국넙쩍당면",
   "판다떡",
@@ -24,12 +24,48 @@ const ingredientList = [
   "유부",
 ];
 
+let unlockedIngredients = [
+  "푸주",
+  "중국넙쩍당면",
+  "판다떡",
+  "치즈떡",
+  "숙주",
+  "배추",
+];
+
+// 코스튬 데이터
+const costumeCatalog = [
+  { id: "hat-strawberry", name: "딸기 모자", slot: "hat", cost: 320, currency: "money", className: "hat-strawberry" },
+  { id: "hat-green", name: "초록 모자", slot: "hat", cost: 7, currency: "gems", className: "hat-green" },
+  { id: "clothes-blue", name: "파란 옷", slot: "clothes", cost: 520, currency: "money", className: "clothes-blue" },
+  { id: "clothes-coral", name: "코랄 앞치마", slot: "clothes", cost: 6, currency: "gems", className: "clothes-coral" },
+];
+
+const ownedCostumes = new Set(["hat-basic", "clothes-basic"]);
+const characterLook = { hat: "hat-basic", clothes: "clothes-basic" };
+
+const shopItems = [
+  ...allIngredients.map((ingredient, idx) => ({
+    id: `ing-${idx}`,
+    type: "ingredient",
+    ingredient,
+    cost: 120 + idx * 20,
+    currency: "money",
+  })),
+  ...costumeCatalog.map((item) => ({ ...item, type: "costume" })),
+];
+
 //--------------------------------------------------
 // 시작 시 초기 설정
 //--------------------------------------------------
 window.onload = () => {
   initIngredients();
   checkEventDay();
+  renderInventory();
+  renderShop("ingredient");
+  renderWardrobe();
+  updateCharacterPreview();
+  updateStats();
 
   const spicy = document.getElementById("spicyLevel");
   document.getElementById("spicyText").textContent = `${spicy.value}단계`;
@@ -43,7 +79,9 @@ window.onload = () => {
 //--------------------------------------------------
 function initIngredients() {
   const ing = document.getElementById("ingredients");
-  ingredientList.forEach((name) => {
+  ing.innerHTML = "";
+  const pool = unlockedIngredients.length ? unlockedIngredients : allIngredients;
+  pool.forEach((name) => {
     const div = document.createElement("div");
     div.textContent = name;
     div.onclick = () => toggleIngredient(div);
@@ -64,6 +102,136 @@ function toggleIngredient(div) {
 function clearSelections() {
   selectedIngredients = [];
   document.querySelectorAll("#ingredients div").forEach((d) => d.classList.remove("selected"));
+}
+
+function renderInventory() {
+  const list = document.getElementById("inventoryList");
+  if (!list) return;
+  list.innerHTML = "";
+  unlockedIngredients.forEach((name) => {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = name;
+    list.appendChild(tag);
+  });
+}
+
+//--------------------------------------------------
+// 상점 & 코스튬
+//--------------------------------------------------
+function renderShop(category = "ingredient") {
+  const list = document.getElementById("shopItems");
+  if (!list) return;
+
+  list.innerHTML = "";
+  shopItems
+    .filter((item) => item.type === category)
+    .forEach((item) => {
+      const card = document.createElement("div");
+      card.className = "shop-item";
+
+      const owned =
+        item.type === "ingredient"
+          ? unlockedIngredients.includes(item.ingredient)
+          : ownedCostumes.has(item.id);
+
+      card.innerHTML = `
+        <div class="shop-title">${item.type === "ingredient" ? item.ingredient : item.name}</div>
+        <p class="shop-price">${item.currency === "money" ? "💰" : "💎"} ${item.cost}</p>
+        <p class="shop-desc">${item.type === "ingredient" ? "새 손님이 요구할 수 있는 재료" : "캐릭터 꾸미기 아이템"}</p>
+      `;
+
+      const btn = document.createElement("button");
+      btn.textContent = owned ? "보유 중" : "구매";
+      btn.disabled = owned;
+      btn.onclick = () => purchaseItem(item.id);
+      card.appendChild(btn);
+
+      list.appendChild(card);
+    });
+
+  document.querySelectorAll(".shop-filters button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.category === category);
+  });
+}
+
+function purchaseItem(id) {
+  const item = shopItems.find((s) => s.id === id);
+  if (!item) return;
+
+  const alreadyOwned =
+    item.type === "ingredient"
+      ? unlockedIngredients.includes(item.ingredient)
+      : ownedCostumes.has(item.id);
+
+  if (alreadyOwned) return alert("이미 보유한 아이템입니다!");
+
+  if (item.currency === "money" && money < item.cost) return alert("머니가 부족해요!");
+  if (item.currency === "gems" && gems < item.cost) return alert("보석이 부족해요!");
+
+  if (item.currency === "money") money -= item.cost;
+  else gems -= item.cost;
+
+  if (item.type === "ingredient") {
+    unlockedIngredients.push(item.ingredient);
+    initIngredients();
+    renderInventory();
+  }
+
+  if (item.type === "costume") {
+    ownedCostumes.add(item.id);
+    renderWardrobe();
+  }
+
+  updateStats();
+  renderShop(item.type);
+}
+
+function renderWardrobe() {
+  const area = document.getElementById("wardrobe");
+  if (!area) return;
+  area.innerHTML = "";
+
+  ["hat", "clothes"].forEach((slot) => {
+    const group = document.createElement("div");
+    group.className = "wardrobe-group";
+
+    const title = document.createElement("h3");
+    title.textContent = slot === "hat" ? "모자" : "옷";
+    group.appendChild(title);
+
+    const ownedList = costumeCatalog
+      .filter((c) => c.slot === slot && ownedCostumes.has(c.id))
+      .concat([{ id: `${slot}-basic`, name: "기본", slot, className: `${slot}-basic` }]);
+
+    ownedList.forEach((c) => {
+      const btn = document.createElement("button");
+      btn.textContent = c.name;
+      btn.className = "wardrobe-btn";
+      btn.onclick = () => applyCostume(slot, c.className || c.id);
+      group.appendChild(btn);
+    });
+
+    area.appendChild(group);
+  });
+}
+
+function applyCostume(slot, className) {
+  characterLook[slot] = className;
+  updateCharacterPreview();
+}
+
+function updateCharacterPreview() {
+  const preview = document.getElementById("avatarPreview");
+  if (preview) preview.className = `avatar-preview ${characterLook.hat} ${characterLook.clothes}`;
+
+  const lora = document.getElementById("lora");
+  if (lora) {
+    lora.className = `${characterLook.hat} ${characterLook.clothes}`;
+    if (currentEvent === "halloween") lora.classList.add("halloween-lora");
+    if (currentEvent === "christmas") lora.classList.add("christmas-lora");
+    if (currentEvent === "hangul") lora.classList.add("hangul-lora");
+  }
 }
 
 //--------------------------------------------------
@@ -92,7 +260,7 @@ function applyEventVisual() {
   const lora = document.getElementById("lora");
 
   body.className = "";
-  lora.className = "";
+  lora.className = `${characterLook.hat} ${characterLook.clothes}`;
 
   const oldSnow = document.querySelector(".snow");
   if (oldSnow) oldSnow.remove();
@@ -194,8 +362,9 @@ function newCustomer() {
 
 function randomRequest() {
   const req = [];
+  const pool = unlockedIngredients.length ? unlockedIngredients : allIngredients;
   for (let i = 0; i < 3; i++) {
-    req.push(ingredientList[Math.floor(Math.random() * ingredientList.length)]);
+    req.push(pool[Math.floor(Math.random() * pool.length)]);
   }
   return {
     ingredients: req,
@@ -260,8 +429,9 @@ function startMiniGame() {
   resultBox.classList.remove("result-finished");
 
   const picks = [];
+  const pool = unlockedIngredients.length ? unlockedIngredients : allIngredients;
   for (let i = 0; i < 4; i++) {
-    const ing = ingredientList[Math.floor(Math.random() * ingredientList.length)];
+    const ing = pool[Math.floor(Math.random() * pool.length)];
     picks.push(ing, ing);
   }
 
