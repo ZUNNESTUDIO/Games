@@ -6,6 +6,8 @@ let gems = 12;
 let selectedIngredients = [];
 let currentCustomer = null;
 let currentEvent = null;
+let customersServed = 0;
+let level = 0;
 
 // 재료 목록
 const allIngredients = [
@@ -35,14 +37,24 @@ let unlockedIngredients = [
 
 // 코스튬 데이터
 const costumeCatalog = [
-  { id: "hat-strawberry", name: "딸기 모자", slot: "hat", cost: 320, currency: "money", className: "hat-strawberry" },
-  { id: "hat-green", name: "초록 모자", slot: "hat", cost: 7, currency: "gems", className: "hat-green" },
-  { id: "clothes-blue", name: "파란 옷", slot: "clothes", cost: 520, currency: "money", className: "clothes-blue" },
+  // Hats
+  { id: "hat-strawberry", name: "딸기 모자", slot: "hat", cost: 200, currency: "money", className: "hat-strawberry" },
+  { id: "hat-banana", name: "바나나 모자", slot: "hat", cost: 250, currency: "money", className: "hat-banana" },
+  { id: "hat-watermelon", name: "수박 모자", slot: "hat", cost: 8, currency: "gems", className: "hat-watermelon" },
+  { id: "hat-grape", name: "포도 모자", slot: "hat", cost: 10, currency: "gems", className: "hat-grape" },
+  // Clothes
+  { id: "clothes-blue", name: "파란 앞치마", slot: "clothes", cost: 520, currency: "money", className: "clothes-blue" },
   { id: "clothes-coral", name: "코랄 앞치마", slot: "clothes", cost: 6, currency: "gems", className: "clothes-coral" },
+  { id: "clothes-mint", name: "민트 바람막이", slot: "clothes", cost: 420, currency: "money", className: "clothes-mint" },
+  // Hair
+  { id: "hair-bob", name: "단발", slot: "hair", cost: 0, currency: "money", className: "hair-bob" },
+  { id: "hair-long", name: "긴 생머리", slot: "hair", cost: 260, currency: "money", className: "hair-long" },
+  { id: "hair-twin", name: "트윈테일", slot: "hair", cost: 7, currency: "gems", className: "hair-twin" },
+  { id: "hair-ash", name: "애쉬 그레이", slot: "hair", cost: 9, currency: "gems", className: "hair-ash" },
 ];
 
-const ownedCostumes = new Set(["hat-basic", "clothes-basic"]);
-const characterLook = { hat: "hat-basic", clothes: "clothes-basic" };
+const ownedCostumes = new Set(["hat-strawberry", "clothes-basic", "hair-bob"]);
+const characterLook = { hat: "hat-strawberry", clothes: "clothes-basic", hair: "hair-bob" };
 
 const shopItems = [
   ...allIngredients.map((ingredient, idx) => ({
@@ -52,7 +64,7 @@ const shopItems = [
     cost: 120 + idx * 20,
     currency: "money",
   })),
-  ...costumeCatalog.map((item) => ({ ...item, type: "costume" })),
+  ...costumeCatalog.map((item) => ({ ...item, type: item.slot })),
 ];
 
 //--------------------------------------------------
@@ -66,6 +78,7 @@ window.onload = () => {
   renderWardrobe();
   updateCharacterPreview();
   updateStats();
+  updateLevelUI();
 
   const spicy = document.getElementById("spicyLevel");
   document.getElementById("spicyText").textContent = `${spicy.value}단계`;
@@ -138,7 +151,7 @@ function renderShop(category = "ingredient") {
       card.innerHTML = `
         <div class="shop-title">${item.type === "ingredient" ? item.ingredient : item.name}</div>
         <p class="shop-price">${item.currency === "money" ? "💰" : "💎"} ${item.cost}</p>
-        <p class="shop-desc">${item.type === "ingredient" ? "새 손님이 요구할 수 있는 재료" : "캐릭터 꾸미기 아이템"}</p>
+        <p class="shop-desc">${describeItem(item)}</p>
       `;
 
       const btn = document.createElement("button");
@@ -153,6 +166,13 @@ function renderShop(category = "ingredient") {
   document.querySelectorAll(".shop-filters button").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.category === category);
   });
+}
+
+function describeItem(item) {
+  if (item.type === "ingredient") return "새 손님이 요구할 수 있는 재료";
+  if (item.type === "hat") return "상큼한 과일 모자";
+  if (item.type === "hair") return "스타일을 바꿔주는 헤어";
+  return "캐릭터 꾸미기 아이템";
 }
 
 function purchaseItem(id) {
@@ -176,11 +196,14 @@ function purchaseItem(id) {
     unlockedIngredients.push(item.ingredient);
     initIngredients();
     renderInventory();
-  }
-
-  if (item.type === "costume") {
+  } else {
     ownedCostumes.add(item.id);
+    // 바로 적용되는 장비라면 시각적으로 반영
+    if (item.slot) {
+      characterLook[item.slot] = item.className;
+    }
     renderWardrobe();
+    updateCharacterPreview();
   }
 
   updateStats();
@@ -192,12 +215,14 @@ function renderWardrobe() {
   if (!area) return;
   area.innerHTML = "";
 
-  ["hat", "clothes"].forEach((slot) => {
+  ["hat", "hair", "clothes"].forEach((slot) => {
     const group = document.createElement("div");
     group.className = "wardrobe-group";
 
     const title = document.createElement("h3");
-    title.textContent = slot === "hat" ? "모자" : "옷";
+    if (slot === "hat") title.textContent = "모자";
+    if (slot === "clothes") title.textContent = "옷";
+    if (slot === "hair") title.textContent = "헤어";
     group.appendChild(title);
 
     const ownedList = costumeCatalog
@@ -222,16 +247,49 @@ function applyCostume(slot, className) {
 }
 
 function updateCharacterPreview() {
+  const combinedClass = `${characterLook.hat} ${characterLook.clothes} ${characterLook.hair}`;
+
   const preview = document.getElementById("avatarPreview");
-  if (preview) preview.className = `avatar-preview ${characterLook.hat} ${characterLook.clothes}`;
+  if (preview) preview.className = `avatar-preview ${combinedClass}`;
+
+  const hero = document.getElementById("heroAvatar");
+  if (hero) hero.className = `character-art ${combinedClass}`;
 
   const lora = document.getElementById("lora");
   if (lora) {
-    lora.className = `${characterLook.hat} ${characterLook.clothes}`;
+    lora.className = `mini-avatar ${combinedClass}`;
+    lora.classList.remove("halloween-lora", "christmas-lora", "hangul-lora");
     if (currentEvent === "halloween") lora.classList.add("halloween-lora");
     if (currentEvent === "christmas") lora.classList.add("christmas-lora");
     if (currentEvent === "hangul") lora.classList.add("hangul-lora");
   }
+}
+
+//--------------------------------------------------
+// 레벨 시스템
+//--------------------------------------------------
+function addCustomerProgress() {
+  customersServed++;
+  const newLevel = Math.min(3, Math.floor(customersServed / 10));
+  if (newLevel !== level) level = newLevel;
+  updateLevelUI();
+}
+
+function updateLevelUI() {
+  const levelText = document.getElementById("level");
+  const countText = document.getElementById("customerCount");
+  const toNext = document.getElementById("toNext");
+  const progressFill = document.getElementById("progressFill");
+
+  if (levelText) levelText.textContent = level;
+  if (countText) countText.textContent = customersServed;
+
+  const nextThreshold = Math.min(30, (level + 1) * 10);
+  const progressBase = level * 10;
+  const progress = Math.max(0, customersServed - progressBase);
+  const percent = Math.min(100, (progress / 10) * 100);
+  if (progressFill) progressFill.style.width = `${percent}%`;
+  if (toNext) toNext.textContent = customersServed >= 30 ? 0 : nextThreshold - customersServed;
 }
 
 //--------------------------------------------------
@@ -260,18 +318,18 @@ function applyEventVisual() {
   const lora = document.getElementById("lora");
 
   body.className = "";
-  lora.className = `${characterLook.hat} ${characterLook.clothes}`;
+  updateCharacterPreview();
 
   const oldSnow = document.querySelector(".snow");
   if (oldSnow) oldSnow.remove();
 
   if (currentEvent === "halloween") {
     body.classList.add("halloween-bg");
-    lora.classList.add("halloween-lora");
+    lora?.classList.add("halloween-lora");
   }
   if (currentEvent === "christmas") {
     body.classList.add("christmas-bg");
-    lora.classList.add("christmas-lora");
+    lora?.classList.add("christmas-lora");
 
     const snow = document.createElement("div");
     snow.classList.add("snow");
@@ -279,7 +337,7 @@ function applyEventVisual() {
   }
   if (currentEvent === "hangul") {
     body.classList.add("hangul-bg");
-    lora.classList.add("hangul-lora");
+    lora?.classList.add("hangul-lora");
   }
 }
 
@@ -392,6 +450,7 @@ function serve() {
       money += reward;
       alert(`${currentCustomer.name} 만족!\n머니 +${reward}`);
     }
+    addCustomerProgress();
   } else {
     alert("손님이 만족하지 못했습니다!");
   }
@@ -470,7 +529,7 @@ function flipCard(div, name) {
       setTimeout(() => {
         div.textContent = "?";
         firstPick.div.textContent = "?";
-      }, 500);
+      }, 300);
     }
     firstPick = null;
   }
@@ -535,10 +594,10 @@ function startHalloweenGame() {
         p.remove();
         clearInterval(fall);
       }
-    }, 50);
+    }, 40);
   }
 
-  const timer = setInterval(spawn, 600);
+  const timer = setInterval(spawn, 550);
 
   setTimeout(() => {
     clearInterval(timer);
@@ -597,10 +656,10 @@ function startChristmasGame() {
         g.remove();
         clearInterval(fall);
       }
-    }, 50);
+    }, 40);
   }
 
-  const timer = setInterval(spawnGift, 800);
+  const timer = setInterval(spawnGift, 700);
 
   setTimeout(() => {
     clearInterval(timer);
