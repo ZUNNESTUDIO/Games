@@ -3,10 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>준우의 게임 프로젝트</title>
+    <title>준우의 러너 게임</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            flex-direction: column;
+        }
+        #gameCanvas {
+            border: 4px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            background: #87CEEB;
+        }
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .info {
+            color: white;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
-    <h1>준우의 게임 프로젝트</h1>
-    <p>중앙초 준우가 ChatGPT와 대화하며 만든 게임입니다.</p>
+    <div class="ui" id="scoreDisplay">Score: 0</div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="info">
+        <p>A/D 키: 좌우 이동 | Space: 점프</p>
+        <p>장애물을 피하고 동전을 모으세요!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        let score = 0;
+        let gameOver = false;
+        let gameSpeed = 3;
+
+        // Player
+        const player = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 40,
+            velocityY: 0,
+            jumpPower: -12,
+            gravity: 0.5,
+            isGrounded: false,
+            speed: 5
+        };
+
+        // Game objects
+        let obstacles = [];
+        let coins = [];
+        let frameCount = 0;
+
+        // Keys
+        const keys = {};
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Space' && player.isGrounded) {
+                player.velocityY = player.jumpPower;
+                player.isGrounded = false;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function createObstacle() {
+            obstacles.push({
+                x: canvas.width,
+                y: 300,
+                width: 30,
+                height: 50
+            });
+        }
+
+        function createCoin() {
+            coins.push({
+                x: canvas.width,
+                y: Math.random() * 200 + 100,
+                width: 25,
+                height: 25
+            });
+        }
+
+        function updatePlayer() {
+            // Horizontal movement
+            if (keys['KeyA'] && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys['KeyD'] && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+
+            // Gravity and jumping
+            player.velocityY += player.gravity;
+            player.y += player.velocityY;
+
+            // Ground collision
+            if (player.y >= 300) {
+                player.y = 300;
+                player.velocityY = 0;
+                player.isGrounded = true;
+            }
+        }
+
+        function updateObstacles() {
+            obstacles.forEach((obs, index) => {
+                obs.x -= gameSpeed;
+
+                // Check collision
+                if (player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y) {
+                    gameOver = true;
+                }
+
+                // Remove off-screen obstacles
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(index, 1);
+                }
+            });
+        }
+
+        function updateCoins() {
+            coins.forEach((coin, index) => {
+                coin.x -= gameSpeed;
+
+                // Check collision
+                if (player.x < coin.x + coin.width &&
+                    player.x + player.width > coin.x &&
+                    player.y < coin.y + coin.height &&
+                    player.y + player.height > coin.y) {
+                    score += 10;
+                    coins.splice(index, 1);
+                    scoreDisplay.textContent = 'Score: ' + score;
+                }
+
+                // Remove off-screen coins
+                if (coin.x + coin.width < 0) {
+                    coins.splice(index, 1);
+                }
+            });
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = '#FF6B6B';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // Eyes
+            ctx.fillStyle = 'white';
+            ctx.fillRect(player.x + 8, player.y + 10, 8, 8);
+            ctx.fillRect(player.x + 24, player.y + 10, 8, 8);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(player.x + 12, player.y + 12, 4, 4);
+            ctx.fillRect(player.x + 28, player.y + 12, 4, 4);
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = '#8B4513';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            });
+        }
+
+        function drawCoins() {
+            coins.forEach(coin => {
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.width/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFA500';
+                ctx.beginPath();
+                ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.width/3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawGround() {
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, 340, canvas.width, 60);
+            ctx.fillStyle = '#6B5345';
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.fillRect(i, 340, 35, 5);
+            }
+        }
+
+        function drawGameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER!', canvas.width/2, canvas.height/2 - 30);
+            ctx.font = '24px Arial';
+            ctx.fillText('Score: ' + score, canvas.width/2, canvas.height/2 + 20);
+            ctx.font = '18px Arial';
+            ctx.fillText('F5를 눌러 다시 시작하세요', canvas.width/2, canvas.height/2 + 60);
+        }
+
+        function gameLoop() {
+            if (!gameOver) {
+                // Clear canvas
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Update
+                updatePlayer();
+                updateObstacles();
+                updateCoins();
+
+                // Spawn obstacles and coins
+                frameCount++;
+                if (frameCount % 120 === 0) {
+                    createObstacle();
+                }
+                if (frameCount % 90 === 0) {
+                    createCoin();
+                }
+
+                // Increase difficulty
+                if (frameCount % 600 === 0) {
+                    gameSpeed += 0.5;
+                }
+
+                // Draw
+                drawGround();
+                drawPlayer();
+                drawObstacles();
+                drawCoins();
+
+                requestAnimationFrame(gameLoop);
+            } else {
+                drawGameOver();
+            }
+        }
+
+        // Start game
+        gameLoop();
+    </script>
 </body>
 </html>
