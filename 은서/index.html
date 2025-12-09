@@ -2,304 +2,1123 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>점프하는 게임 - 미야올</title>
+  <title>미야올 점프 어드벤처</title>
   <style>
+    :root {
+      --sky: linear-gradient(120deg, #ff9de6, #9bf6ff, #ffd166, #caffbf, #bdb2ff);
+      --ground: #fff9f3;
+      --text: #2c2c54;
+      --shadow: rgba(0, 0, 0, 0.15);
+      --bar: linear-gradient(90deg, #ff8fb1, #ffd166, #8ef6e4, #a29bfe);
+      --boss: linear-gradient(120deg, #ff6fb7, #ff9f1c, #8ecae6);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      background: #d7f0ff;
-      font-family: 'Noto Sans KR', sans-serif;
+      font-family: 'Noto Sans KR', 'Pretendard', system-ui, sans-serif;
+      color: var(--text);
+      background: #0f172a;
+      overflow-x: hidden;
+    }
+
+    .rainbow-bg {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(120deg, #ff9de6, #9bf6ff, #ffd166, #caffbf, #bdb2ff, #ffadad);
+      background-size: 400% 400%;
+      animation: rainbowFlow 18s ease infinite;
+      z-index: -2;
+    }
+
+    .sparkles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.4), transparent 40%),
+        radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.3), transparent 45%),
+        radial-gradient(circle at 50% 70%, rgba(255, 255, 255, 0.25), transparent 50%);
+      filter: blur(0.4px);
+      animation: twinkle 6s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes rainbowFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      color: #fff;
+      text-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 36px;
+    }
+
+    .start-screen, .result-screen, .costume-modal {
+      background: rgba(255, 255, 255, 0.9);
+      width: min(900px, 94%);
+      margin: 10px auto;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px var(--shadow);
       text-align: center;
     }
 
-    #startScreen {
-      margin-top: 80px;
-    }
+    .start-screen h2 { margin-top: 0; }
 
     .difficulty-btn {
+      border: none;
+      padding: 14px 30px;
+      margin: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .difficulty-btn:hover { transform: translateY(-3px) scale(1.02); }
+
+    .easy { background: linear-gradient(135deg, #b7f7c0, #7bf1a8); }
+    .normal { background: linear-gradient(135deg, #ffe58f, #ffc46b); }
+    .hard { background: linear-gradient(135deg, #ffadad, #ff7b7b); }
+
+    .game-wrapper {
+      width: min(960px, 94%);
+      margin: 0 auto 40px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 20px 60px var(--shadow);
+      display: none;
+      position: relative;
+    }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .hud .pill {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 14px;
+      border-radius: 12px;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .progress {
+      flex: 1;
+      height: 16px;
+      background: #f1f1f1;
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.08);
+      position: relative;
+    }
+
+    .progress span {
       display: block;
-      margin: 20px auto;
-      padding: 15px 40px;
-      font-size: 22px;
-      font-weight: bold;
+      height: 100%;
+      width: 0;
+      background: var(--bar);
+      background-size: 200% 200%;
+      animation: rainbowFlow 10s linear infinite;
+    }
+
+    #gameArea {
+      position: relative;
+      width: 900px;
+      max-width: 100%;
+      height: 440px;
+      margin: 0 auto;
+      background: linear-gradient(to top, #fff9f3 20%, rgba(255,255,255,0));
+      overflow: hidden;
+      border-radius: 16px;
+      border: 4px solid rgba(255, 255, 255, 0.7);
+      box-shadow: inset 0 -10px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .ground-line {
+      position: absolute;
+      bottom: 60px;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, #ffb5e8, #b5e8ff, #ffdfba, #c7ffd8, #b5b9ff);
+      filter: blur(0.5px);
+    }
+
+    .platform { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; background: transparent; }
+
+    .cat {
+      position: absolute;
+      width: 80px;
+      height: 90px;
+      bottom: 60px;
+      left: 80px;
+      transform-origin: center;
+      transition: filter 0.2s ease;
+    }
+
+    .cat::before,
+    .cat::after {
+      content: '';
+      position: absolute;
+      display: block;
+    }
+
+    /* Cat 1: simple round */
+    .cat.cat-1 {
+      background: radial-gradient(circle at 30% 30%, #fff3f3, #ffc7e6);
+      border-radius: 50% 50% 55% 55%;
+      box-shadow: inset -6px -10px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .cat.cat-1::before { /* ears */
+      width: 18px;
+      height: 18px;
+      background: #ffc7e6;
+      border-radius: 4px 14px 4px 14px;
+      box-shadow: 44px -2px 0 #ffc7e6;
+      top: -6px;
+      left: 6px;
+      transform: rotate(-12deg);
+    }
+
+    .cat.cat-1::after { /* whiskers */
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+      top: 46px;
+      left: 10px;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+    }
+
+    .cat .face {
+      position: absolute;
+      width: 36px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      left: 22px;
+      top: 30px;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .cat .eye {
+      position: absolute;
+      width: 8px;
+      height: 12px;
+      background: #2c2c54;
+      border-radius: 50%;
+      top: 3px;
+      animation: blink 6s infinite;
+    }
+
+    .cat .eye.left { left: 8px; }
+    .cat .eye.right { right: 8px; }
+
+    .cat .nose {
+      position: absolute;
+      width: 8px;
+      height: 6px;
+      background: #ff6f91;
+      border-radius: 50%;
+      left: 14px;
+      top: 12px;
+      box-shadow: 0 6px 0 #ffb6c1;
+    }
+
+    .cat .cheek {
+      position: absolute;
+      width: 10px;
+      height: 6px;
+      background: #ffb3c6;
+      border-radius: 50%;
+      top: 13px;
+    }
+
+    .cat .cheek.left { left: -2px; }
+    .cat .cheek.right { right: -2px; }
+
+    /* Cat 2: striped */
+    .cat.cat-2 {
+      background: linear-gradient(140deg, #fff6d6, #ffd166);
+      border-radius: 54% 46% 55% 52%;
+      box-shadow: inset -5px -8px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .cat.cat-2::before {
+      content: '';
+      position: absolute;
+      width: 80px;
+      height: 90px;
+      left: 0;
+      top: 0;
+      background: repeating-linear-gradient(-45deg, rgba(255, 149, 128, 0.7) 0 10px, transparent 10px 20px);
+      border-radius: inherit;
+      mix-blend-mode: multiply;
+      opacity: 0.7;
+    }
+
+    .cat.cat-2::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 16px;
+      background: #ffd166;
+      border-radius: 50%;
+      top: -4px;
+      left: 10px;
+      box-shadow: 52px -2px 0 #ffd166;
+    }
+
+    /* Cat 3: fancy accessories */
+    .cat.cat-3 {
+      background: linear-gradient(160deg, #c4d9ff, #a29bfe);
+      border-radius: 50% 52% 55% 50%;
+      box-shadow: inset -4px -8px 0 rgba(0, 0, 0, 0.08), 0 0 0 4px rgba(255, 255, 255, 0.4);
+    }
+
+    .cat.cat-3::before {
+      width: 16px;
+      height: 16px;
+      background: #a29bfe;
+      border-radius: 4px 12px 4px 12px;
+      top: -6px;
+      left: 12px;
+      box-shadow: 42px -2px 0 #a29bfe;
+    }
+
+    .cat.cat-3::after {
+      width: 18px;
+      height: 12px;
+      background: linear-gradient(120deg, #ff9de6, #ffd166);
       border-radius: 10px;
-      cursor: pointer;
-      border: none;
+      bottom: 12px;
+      left: 30px;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6);
     }
 
-    .easy {
-      background: #b6f7a5;
-    }
-
-    .normal {
-      background: #ffe58f;
-    }
-
-    .hard {
-      background: #ff9f9f;
-    }
-
-    #gameCanvas {
-      background: #a6e3ff;
-      display: none;
-      margin: 20px auto;
-      border: 3px solid #333;
-    }
-
-    #info {
-      font-size: 20px;
-      font-weight: bold;
-      display: none;
-    }
-
-    #resultScreen {
-      display: none;
-      margin-top: 30px;
-    }
-
-    #resultScreen h2 {
-      font-size: 26px;
-      margin-bottom: 20px;
-    }
-
-    #restartButton {
-      padding: 12px 28px;
-      font-size: 20px;
-      font-weight: bold;
-      border: none;
+    .cat.cat-3 .accessory {
+      position: absolute;
+      width: 50px;
+      height: 16px;
+      background: linear-gradient(90deg, #ffb6c1, #ff9de6);
       border-radius: 10px;
-      background: #6cc4ff;
-      cursor: pointer;
+      top: -10px;
+      left: 14px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
+
+    .cat.cat-3 .accessory::before,
+    .cat.cat-3 .accessory::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: linear-gradient(120deg, #ffe68f, #ffb6c1);
+      border-radius: 50%;
+      top: -6px;
+    }
+
+    .cat.cat-3 .accessory::before { left: -6px; }
+    .cat.cat-3 .accessory::after { right: -6px; }
+
+    @keyframes blink {
+      0%, 90%, 100% { height: 12px; }
+      92%, 96% { height: 2px; }
+    }
+
+    .obstacle {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      bottom: 60px;
+      background: linear-gradient(145deg, #ff9de6, #9bf6ff);
+      box-shadow: 0 8px 16px var(--shadow), inset 0 -4px 8px rgba(0,0,0,0.12);
+      animation: bob 1.5s ease-in-out infinite;
+    }
+
+    .monster {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      bottom: 60px;
+      box-shadow: inset -6px -8px 0 rgba(0,0,0,0.1);
+      animation: bounce 1.8s ease-in-out infinite;
+    }
+
+    .monster::before, .monster::after {
+      content: '';
+      position: absolute;
+      background: #2c2c54;
+      border-radius: 50%;
+    }
+
+    .monster::before {
+      width: 10px;
+      height: 14px;
+      top: 18px;
+      left: 14px;
+      box-shadow: 22px 0 0 #2c2c54;
+    }
+
+    .monster::after {
+      width: 20px;
+      height: 10px;
+      bottom: 14px;
+      left: 20px;
+      border-radius: 50% 50% 40% 40%;
+      background: #ffb3c6;
+    }
+
+    .pink { background: linear-gradient(150deg, #ffc8dd, #ffafcc); }
+    .purple { background: linear-gradient(150deg, #b5b9ff, #9381ff); }
+    .yellow { background: linear-gradient(150deg, #ffe58f, #ffc46b); }
+    .green { background: linear-gradient(150deg, #b5f7c0, #7bf1a8); }
+
+    .boss {
+      position: absolute;
+      width: 160px;
+      height: 140px;
+      border-radius: 50% 50% 48% 48%;
+      background: var(--boss);
+      bottom: 60px;
+      left: 720px;
+      box-shadow: 0 16px 28px var(--shadow), inset -10px -14px 0 rgba(0,0,0,0.1);
+      animation: bossPulse 2.5s ease-in-out infinite;
+      overflow: hidden;
+    }
+
+    .boss::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 60%);
+      mix-blend-mode: screen;
+    }
+
+    .boss::after {
+      content: '';
+      position: absolute;
+      width: 60px;
+      height: 16px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 999px;
+      top: 18px;
+      left: 20px;
+      box-shadow: 60px 4px 0 rgba(255,255,255,0.6);
+    }
+
+    .boss .mouth {
+      position: absolute;
+      width: 80px;
+      height: 36px;
+      background: #fff;
+      border-radius: 0 0 40px 40px;
+      bottom: 24px;
+      left: 40px;
+      box-shadow: inset 0 -8px 0 #ffb3c6;
+    }
+
+    .boss .eye-line {
+      position: absolute;
+      width: 10px;
+      height: 26px;
+      background: #2c2c54;
+      border-radius: 10px;
+      top: 50px;
+      left: 48px;
+      box-shadow: 54px 0 0 #2c2c54;
+    }
+
+    .boss .crown {
+      position: absolute;
+      width: 60px;
+      height: 30px;
+      background: linear-gradient(120deg, #ffe58f, #ffb6c1);
+      top: -6px;
+      left: 50px;
+      clip-path: polygon(0 100%, 20% 0, 40% 100%, 60% 0, 80% 100%, 100% 0, 100% 100%);
+      box-shadow: 0 10px 16px rgba(0,0,0,0.12);
+    }
+
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes bossPulse { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.03); } }
+
+    .coin {
+      position: absolute;
+      border-radius: 50%;
+      bottom: 120px;
+      width: 26px;
+      height: 26px;
+      background: radial-gradient(circle at 30% 30%, #fff, #ffd166);
+      box-shadow: 0 8px 16px var(--shadow);
+      animation: spin 1s linear infinite;
+    }
+
+    .coin.big {
+      width: 36px;
+      height: 36px;
+      background: radial-gradient(circle at 30% 30%, #fff, #ffdf6b);
+      box-shadow: 0 10px 18px var(--shadow), 0 0 0 4px rgba(255, 255, 255, 0.6);
+    }
+
+    .coin.big::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 255, 255, 0.8);
+    }
+
+    .trail {
+      position: absolute;
+      width: 60px;
+      height: 6px;
+      background: linear-gradient(90deg, rgba(255,157,230,0.8), rgba(155,246,255,0.6));
+      border-radius: 999px;
+      filter: blur(1px);
+      opacity: 0.8;
+      animation: trailFade 0.4s ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes trailFade { to { opacity: 0; transform: translateX(-20px) scaleX(0.8); } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .popup {
+      position: absolute;
+      color: #ff6f91;
+      font-weight: 800;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      animation: popup 0.9s ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes popup {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-30px); }
+    }
+
+    .particle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(120deg, #ff9de6, #9bf6ff);
+      opacity: 0.9;
+      animation: particle 0.8s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes particle { to { transform: translateY(-40px) scale(0.4); opacity: 0; } }
+
+    .shake { animation: shake 0.4s ease; }
+    @keyframes shake {
+      0%,100% { transform: translate(0); }
+      20% { transform: translate(-8px, 4px); }
+      40% { transform: translate(8px, -4px); }
+      60% { transform: translate(-4px, 4px); }
+      80% { transform: translate(4px, -4px); }
+    }
+
+    .celebrate {
+      animation: celebrate 1s ease;
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.6), 0 14px 40px rgba(0,0,0,0.2);
+    }
+
+    @keyframes celebrate {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.04); }
+      60% { transform: scale(0.98); }
+      100% { transform: scale(1); }
+    }
+
+    .result-screen { display: none; }
+
+    .restart {
+      padding: 12px 26px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #9bf6ff, #b5f7c0);
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 30px var(--shadow);
+    }
+
+    .costume-modal {
+      display: none;
+    }
+
+    .costume-options {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .costume-button {
+      border: none;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      background: #f4f4ff;
+      box-shadow: 0 10px 22px var(--shadow);
+      transition: transform 0.2s ease;
+      font-weight: 700;
+    }
+
+    .costume-button:hover { transform: translateY(-4px); }
+
+    .costume-preview {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 6px;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .outfit-star { background: linear-gradient(135deg, #ffe58f, #ffd166); box-shadow: 0 0 0 4px rgba(255, 214, 102, 0.5); }
+    .outfit-heart { background: linear-gradient(135deg, #ffb6c1, #ff9de6); box-shadow: 0 0 0 4px rgba(255, 182, 193, 0.5); }
+    .outfit-sky { background: linear-gradient(135deg, #9bf6ff, #b5e8ff); box-shadow: 0 0 0 4px rgba(155, 246, 255, 0.5); }
+    .outfit-rainbow { background: conic-gradient(#ff9de6, #ffd166, #9bf6ff, #b5f7c0, #b5b9ff); box-shadow: 0 0 0 4px rgba(255,255,255,0.6); }
+
+    .boss-bar {
+      width: 100%;
+      height: 12px;
+      background: #ffe4ec;
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.1);
+      margin-top: 8px;
+      display: none;
+    }
+
+    .boss-bar span {
+      display: block;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff6f91, #ffdf6b);
+    }
+
+    .floating-ui {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 14px;
+      border-radius: 12px;
+      box-shadow: 0 10px 24px var(--shadow);
+      font-weight: 700;
+    }
+
+    /* Cute sound placeholders */
+    /* const jumpSound = new Audio('jump.mp3'); */
   </style>
 </head>
 <body>
-  <div id="startScreen">
-    <h1>🎮 점프하는 게임 — 미야올</h1>
-    <h2>난이도를 선택하세요</h2>
-    <p>← → 로 이동하고 ↑ 로 점프해요. 점프 30번을 성공하면 클리어!</p>
+  <div class="rainbow-bg"></div>
+  <div class="sparkles"></div>
+  <header>
+    <h1>🌈 미야올 점프 어드벤처</h1>
+    <p>은서의 손그림을 닮은 귀여운 고양이와 무지개 세계를 달려요!</p>
+  </header>
 
-    <button class="difficulty-btn easy" onclick="startGame('easy')">초보 (매우 단순)</button>
-    <button class="difficulty-btn normal" onclick="startGame('normal')">중수 (조금 복잡)</button>
-    <button class="difficulty-btn hard" onclick="startGame('hard')">고수 (매우 복잡)</button>
+  <div class="start-screen" id="startScreen">
+    <h2>난이도를 선택하세요</h2>
+    <p>← → 로 이동, ↑/스페이스로 점프! 코인 5점을 모으면 레벨업해요.</p>
+    <div>
+      <button class="difficulty-btn easy" onclick="startGame('easy')">초보</button>
+      <button class="difficulty-btn normal" onclick="startGame('normal')">중수</button>
+      <button class="difficulty-btn hard" onclick="startGame('hard')">고수</button>
+    </div>
+    <p style="margin-top:16px">원하는 고양이를 선택하세요:</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <button class="difficulty-btn" style="background:#ffc7e6" onclick="selectCat(1)">둥글둥글 미야</button>
+      <button class="difficulty-btn" style="background:#ffd166" onclick="selectCat(2)">줄무늬 미야</button>
+      <button class="difficulty-btn" style="background:#a29bfe;color:#fff" onclick="selectCat(3)">멋쟁이 미야</button>
+    </div>
+    <p id="selectedCat" style="font-weight:800;color:#ff6f91;margin-top:10px">선택: 둥글둥글 미야</p>
   </div>
 
-  <canvas id="gameCanvas" width="700" height="400"></canvas>
-  <div id="info">점프 횟수: 0 / 30</div>
+  <div class="game-wrapper" id="gameWrapper">
+    <div class="hud">
+      <div class="pill">레벨 <span id="level">1</span></div>
+      <div class="pill">점수 <span id="score">0</span></div>
+      <div class="pill">속도 <span id="speed">1.0x</span></div>
+      <div class="pill">코인 <span id="coinText">0/5</span></div>
+      <div class="progress"><span id="progressBar"></span></div>
+    </div>
+    <div class="boss-bar" id="bossBar"><span></span></div>
+    <div id="gameArea">
+      <div class="ground-line"></div>
+      <div class="platform"></div>
+      <div class="cat cat-1" id="player">
+        <div class="face">
+          <div class="eye left"></div>
+          <div class="eye right"></div>
+          <div class="nose"></div>
+          <div class="cheek left"></div>
+          <div class="cheek right"></div>
+        </div>
+        <div class="accessory" style="display:none"></div>
+      </div>
+    </div>
+    <div class="floating-ui" id="statusText">준비!</div>
+  </div>
 
-  <div id="resultScreen">
+  <div class="result-screen" id="resultScreen">
     <h2 id="resultMessage"></h2>
-    <button id="restartButton" onclick="restartGame()">다시 시작</button>
+    <button class="restart" onclick="restartGame()">다시 달리기</button>
+  </div>
+
+  <div class="costume-modal" id="costumeModal">
+    <h3>레벨업! 새로운 의상 선택</h3>
+    <div class="costume-options">
+      <button class="costume-button" onclick="applyCostume('outfit-star')">
+        <div class="costume-preview outfit-star"></div>
+        별빛 리본
+      </button>
+      <button class="costume-button" onclick="applyCostume('outfit-heart')">
+        <div class="costume-preview outfit-heart"></div>
+        하트 머리핀
+      </button>
+      <button class="costume-button" onclick="applyCostume('outfit-sky')">
+        <div class="costume-preview outfit-sky"></div>
+        파스텔 망토
+      </button>
+      <button class="costume-button" onclick="applyCostume('outfit-rainbow')">
+        <div class="costume-preview outfit-rainbow"></div>
+        무지개 왕관 (고레벨)
+      </button>
+    </div>
+  </div>
+
+  <div class="result-screen" id="bossDefeat" style="display:none">
+    <h2>🌈 무지개 폭죽! 보스 격파!</h2>
   </div>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    const gameArea = document.getElementById('gameArea');
+    const playerEl = document.getElementById('player');
     const startScreen = document.getElementById('startScreen');
-    const info = document.getElementById('info');
+    const gameWrapper = document.getElementById('gameWrapper');
     const resultScreen = document.getElementById('resultScreen');
     const resultMessage = document.getElementById('resultMessage');
+    const statusText = document.getElementById('statusText');
+    const levelText = document.getElementById('level');
+    const scoreText = document.getElementById('score');
+    const coinText = document.getElementById('coinText');
+    const progressBar = document.getElementById('progressBar');
+    const speedText = document.getElementById('speed');
+    const bossBar = document.getElementById('bossBar');
+    const bossGauge = bossBar.querySelector('span');
+    const costumeModal = document.getElementById('costumeModal');
+    const selectedCat = document.getElementById('selectedCat');
 
     const DIFFICULTY_SETTINGS = {
-      easy: { speedMin: 3, speedMax: 4, respawnMin: 650 },
-      normal: { speedMin: 4, speedMax: 6, respawnMin: 550 },
-      hard: { speedMin: 6, speedMax: 9, respawnMin: 450 }
+      easy: { baseSpeed: 3, jump: -11, gravity: 0.6 },
+      normal: { baseSpeed: 4, jump: -12, gravity: 0.7 },
+      hard: { baseSpeed: 5, jump: -13, gravity: 0.8 }
     };
 
     const keys = {};
-    let difficulty = null;
-    let currentLevel = null;
-    let miyawol;
-    let obstacle;
-    let jumpCount = 0;
+    let currentCat = 1;
+    let difficulty = DIFFICULTY_SETTINGS.easy;
+    let player = {};
+    let objects = [];
+    let monsters = [];
+    let boss = null;
+    let bossHealth = 0;
+    let bossMaxHealth = 0;
+    let coinScore = 0;
+    let level = 1;
+    let score = 0;
     let gameOver = false;
+    let lastSpawn = 0;
+    let coinTimer = 0;
+    let monsterTimer = 0;
+    let bossTimer = 0;
+    let speedMultiplier = 1;
+    let lastTime = 0;
 
     document.addEventListener('keydown', (e) => {
-      keys[e.key] = true;
+      keys[e.key.toLowerCase()] = true;
     });
-
     document.addEventListener('keyup', (e) => {
-      keys[e.key] = false;
+      keys[e.key.toLowerCase()] = false;
     });
 
-    function drawCat(ctx, x, y, w, h) {
-      const headRadius = w * 0.4;
-
-      ctx.fillStyle = '#ffc7c7';
-      ctx.fillRect(x + w * 0.2, y + h * 0.5, w * 0.6, h * 0.5);
-
-      ctx.beginPath();
-      ctx.fillStyle = '#ffb6c1';
-      ctx.arc(x + w / 2, y + h * 0.35, headRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x + w * 0.35, y + h * 0.18);
-      ctx.lineTo(x + w * 0.25, y + h * 0.32);
-      ctx.lineTo(x + w * 0.45, y + h * 0.32);
-      ctx.fillStyle = '#ff9eb2';
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x + w * 0.65, y + h * 0.18);
-      ctx.lineTo(x + w * 0.55, y + h * 0.32);
-      ctx.lineTo(x + w * 0.75, y + h * 0.32);
-      ctx.fill();
-
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.arc(x + w * 0.42, y + h * 0.35, w * 0.05, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(x + w * 0.58, y + h * 0.35, w * 0.05, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ff6f91';
-      ctx.beginPath();
-      ctx.arc(x + w * 0.5, y + h * 0.42, w * 0.03, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = '#ff6f91';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x + w * 0.5, y + h * 0.45);
-      ctx.lineTo(x + w * 0.48, y + h * 0.48);
-      ctx.moveTo(x + w * 0.5, y + h * 0.45);
-      ctx.lineTo(x + w * 0.52, y + h * 0.48);
-      ctx.stroke();
+    function selectCat(num) {
+      currentCat = num;
+      playerEl.classList.remove('cat-1', 'cat-2', 'cat-3');
+      playerEl.classList.add(`cat-${num}`);
+      playerEl.querySelector('.accessory').style.display = num === 3 ? 'block' : 'none';
+      const names = ['둥글둥글 미야', '줄무늬 미야', '멋쟁이 미야'];
+      selectedCat.textContent = `선택: ${names[num - 1]}`;
     }
 
-    function startGame(level) {
-      difficulty = DIFFICULTY_SETTINGS[level];
-      currentLevel = level;
-      initializeGame();
+    function startGame(levelKey) {
+      difficulty = DIFFICULTY_SETTINGS[levelKey];
+      resetGame();
       startScreen.style.display = 'none';
-      canvas.style.display = 'block';
-      info.style.display = 'block';
+      gameWrapper.style.display = 'block';
       resultScreen.style.display = 'none';
-      info.textContent = `점프 횟수: ${jumpCount} / 30`;
-      requestAnimationFrame(update);
+      requestAnimationFrame(loop);
     }
 
-    function initializeGame() {
-      miyawol = {
-        x: 100,
-        y: 300,
-        width: 60,
-        height: 80,
+    function resetGame() {
+      objects.forEach(o => o.el.remove());
+      monsters.forEach(m => m.el.remove());
+      if (boss) boss.el.remove();
+      objects = [];
+      monsters = [];
+      boss = null;
+      coinScore = 0;
+      level = 1;
+      score = 0;
+      speedMultiplier = 1;
+      bossBar.style.display = 'none';
+      bossHealth = 0;
+      bossMaxHealth = 0;
+      player = {
+        x: 80,
+        y: 280,
+        w: 80,
+        h: 90,
         vy: 0,
-        gravity: 0.6,
-        onGround: true
+        onGround: true,
+        costume: null
       };
-
-      obstacle = {
-        x: canvas.width,
-        y: 330,
-        width: 40,
-        height: 40,
-        speed: getRandomSpeed()
-      };
-
-      jumpCount = 0;
+      updateHUD();
+      statusText.textContent = '출발!';
       gameOver = false;
-      keys.ArrowLeft = false;
-      keys.ArrowRight = false;
-      keys.ArrowUp = false;
+      lastTime = performance.now();
     }
 
-    function getRandomSpeed() {
-      return difficulty.speedMin + Math.random() * (difficulty.speedMax - difficulty.speedMin);
+    function loop(timestamp) {
+      if (gameOver) return;
+      const delta = Math.min(32, timestamp - lastTime);
+      lastTime = timestamp;
+      update(delta);
+      requestAnimationFrame(loop);
+    }
+
+    function update(delta) {
+      handleInput();
+      applyPhysics();
+      spawnObjects(delta);
+      moveObjects(delta);
+      checkCollisions();
+      updateHUD();
+    }
+
+    function handleInput() {
+      const speed = 4 * speedMultiplier;
+      if (keys['arrowleft'] || keys['a']) player.x = Math.max(0, player.x - speed);
+      if (keys['arrowright'] || keys['d']) player.x = Math.min(gameArea.clientWidth - player.w, player.x + speed);
+      if ((keys['arrowup'] || keys[' ']) && player.onGround) jump();
+      playerEl.style.transform = `translate(${player.x}px, ${player.y}px)`;
     }
 
     function jump() {
-      if (!miyawol.onGround || gameOver) {
-        return;
-      }
+      if (!player.onGround) return;
+      player.vy = difficulty.jump;
+      player.onGround = false;
+      createParticles(player.x + player.w / 2, gameArea.clientHeight - 60);
+      // jumpSound.play();
+    }
 
-      miyawol.vy = -12;
-      miyawol.onGround = false;
-      jumpCount += 1;
-      info.textContent = `점프 횟수: ${jumpCount} / 30`;
-
-      if (jumpCount >= 30) {
-        endGame('🎉 게임 클리어! 미야올이 점프 30번 성공했습니다!');
+    function applyPhysics() {
+      player.vy += difficulty.gravity;
+      player.y += player.vy;
+      const floor = gameArea.clientHeight - 60 - player.h;
+      if (player.y > floor) {
+        player.y = floor;
+        player.vy = 0;
+        player.onGround = true;
       }
     }
 
-    function update() {
-      if (gameOver) {
-        return;
+    function spawnObjects(delta) {
+      lastSpawn += delta;
+      coinTimer += delta;
+      monsterTimer += delta;
+      bossTimer += delta;
+      const spawnInterval = Math.max(550 - level * 20, 240);
+      if (lastSpawn > spawnInterval && !boss) {
+        lastSpawn = 0;
+        const isRainbow = Math.random() < 0.4;
+        const obstacle = document.createElement('div');
+        obstacle.className = 'obstacle';
+        obstacle.style.background = isRainbow ? `linear-gradient(135deg, ${randomColor()}, ${randomColor()})` : obstacle.style.background;
+        gameArea.appendChild(obstacle);
+        objects.push({ el: obstacle, type: 'obstacle', x: gameArea.clientWidth + 20, y: gameArea.clientHeight - 106, w: 46, h: 46, speed: getSpeed() });
       }
 
-      if (keys.ArrowLeft) miyawol.x -= 5;
-      if (keys.ArrowRight) miyawol.x += 5;
-      if (keys.ArrowUp) jump();
-
-      miyawol.x = Math.max(0, Math.min(canvas.width - miyawol.width, miyawol.x));
-
-      miyawol.y += miyawol.vy;
-      miyawol.vy += miyawol.gravity;
-
-      if (miyawol.y > 300) {
-        miyawol.y = 300;
-        miyawol.vy = 0;
-        miyawol.onGround = true;
+      if (coinTimer > 600) {
+        coinTimer = 0;
+        const coin = document.createElement('div');
+        const big = Math.random() < 0.35;
+        coin.className = big ? 'coin big' : 'coin';
+        gameArea.appendChild(coin);
+        objects.push({ el: coin, type: big ? 'coin2' : 'coin1', x: gameArea.clientWidth + 20, y: gameArea.clientHeight - (big ? 200 : 160), w: big ? 36 : 26, h: big ? 36 : 26, speed: getSpeed() * 0.9, points: big ? 2 : 1 });
       }
 
-      obstacle.x -= obstacle.speed;
-      if (obstacle.x < -50) {
-        obstacle.x = difficulty.respawnMin + Math.random() * 200;
-        obstacle.speed = getRandomSpeed();
+      if (monsterTimer > 1500 && !boss) {
+        monsterTimer = 0;
+        spawnMonster();
       }
 
-      const isColliding =
-        miyawol.x < obstacle.x + obstacle.width &&
-        miyawol.x + miyawol.width > obstacle.x &&
-        miyawol.y < obstacle.y + obstacle.height &&
-        miyawol.y + miyawol.height > obstacle.y;
-
-      if (isColliding) {
-        endGame('💥 미야올이 장애물에 부딪혔습니다! 게임 오버!');
-        return;
+      if (level % 5 === 0 && !boss) {
+        spawnBoss();
       }
-
-      draw();
-      requestAnimationFrame(update);
     }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function spawnMonster() {
+      const el = document.createElement('div');
+      const colors = ['pink', 'purple', 'yellow', 'green'];
+      el.className = `monster ${colors[Math.floor(Math.random() * colors.length)]}`;
+      gameArea.appendChild(el);
+      monsters.push({ el, x: gameArea.clientWidth + 10, y: gameArea.clientHeight - 120, w: 60, h: 60, speed: getSpeed() * 0.8, dir: 1 });
+    }
 
-      ctx.fillStyle = '#83c9f4';
-      ctx.fillRect(0, 360, canvas.width, 40);
+    function spawnBoss() {
+      boss = { el: document.createElement('div'), x: gameArea.clientWidth - 180, y: gameArea.clientHeight - 200, w: 160, h: 140, speed: 1.2 };
+      boss.el.className = 'boss';
+      boss.el.innerHTML = '<div class="crown"></div><div class="eye-line"></div><div class="mouth"></div>';
+      gameArea.appendChild(boss.el);
+      bossHealth = bossMaxHealth = 12;
+      bossBar.style.display = 'block';
+      statusText.textContent = '보스 등장! 점프로 머리를 톡!';
+    }
 
-      drawCat(ctx, miyawol.x, miyawol.y, miyawol.width, miyawol.height);
+    function moveObjects(delta) {
+      const moveBy = (obj) => obj.speed * speedMultiplier;
+      objects = objects.filter(obj => {
+        obj.x -= moveBy(obj);
+        obj.el.style.transform = `translate(${obj.x}px, ${obj.y}px)`;
+        if (obj.x < -120) { obj.el.remove(); return false; }
+        if (obj.type === 'coin1' || obj.type === 'coin2') createTrail(obj);
+        return true;
+      });
 
-      ctx.fillStyle = '#444';
-      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      monsters = monsters.filter(m => {
+        m.x -= moveBy(m);
+        m.y = gameArea.clientHeight - 120 + Math.sin(Date.now() / 280) * 10;
+        m.el.style.transform = `translate(${m.x}px, ${m.y}px)`;
+        if (m.x < -100) { m.el.remove(); return false; }
+        return true;
+      });
+
+      if (boss) {
+        boss.x -= boss.speed;
+        if (boss.x < gameArea.clientWidth - 260 || boss.x > gameArea.clientWidth - 120) boss.speed *= -1;
+        boss.el.style.transform = `translate(${boss.x}px, ${boss.y}px)`;
+        if (bossTimer > 800) {
+          bossTimer = 0;
+          spawnRainbowAttack();
+        }
+      }
+    }
+
+    function spawnRainbowAttack() {
+      const atk = document.createElement('div');
+      atk.className = 'obstacle';
+      atk.style.width = '32px';
+      atk.style.height = '32px';
+      atk.style.background = 'conic-gradient(#ff9de6, #ffd166, #9bf6ff, #b5f7c0)';
+      gameArea.appendChild(atk);
+      objects.push({ el: atk, type: 'obstacle', x: boss.x, y: boss.y + 80, w: 32, h: 32, speed: getSpeed() + 1.5 });
+    }
+
+    function createTrail(obj) {
+      if (Math.random() > 0.4) return;
+      const trail = document.createElement('div');
+      trail.className = 'trail';
+      trail.style.left = `${obj.x}px`;
+      trail.style.top = `${obj.y + obj.h / 2}px`;
+      gameArea.appendChild(trail);
+      setTimeout(() => trail.remove(), 400);
+    }
+
+    function checkCollisions() {
+      const playerRect = { x: player.x, y: player.y, w: player.w, h: player.h };
+
+      for (let i = objects.length - 1; i >= 0; i--) {
+        const obj = objects[i];
+        const rect = { x: obj.x, y: obj.y, w: obj.w, h: obj.h };
+        if (isColliding(playerRect, rect)) {
+          if (obj.type === 'obstacle') {
+            triggerHit();
+            return;
+          } else if (obj.type.startsWith('coin')) {
+            collectCoin(obj.points || 1, obj);
+            obj.el.remove();
+            objects.splice(i, 1);
+          }
+        }
+      }
+
+      for (let i = monsters.length - 1; i >= 0; i--) {
+        const m = monsters[i];
+        const rect = { x: m.x, y: m.y, w: m.w, h: m.h };
+        if (isColliding(playerRect, rect)) {
+          triggerHit();
+          return;
+        }
+      }
+
+      if (boss) {
+        const bRect = { x: boss.x, y: boss.y, w: boss.w, h: boss.h };
+        if (isColliding(playerRect, bRect) && player.vy < 0) {
+          bossHealth -= 1;
+          bossGauge.style.width = `${(bossHealth / bossMaxHealth) * 100}%`;
+          createParticles(boss.x + boss.w / 2, boss.y + 40, true);
+          player.vy = difficulty.jump * 0.6;
+          if (bossHealth <= 0) defeatBoss();
+        } else if (isColliding(playerRect, bRect)) {
+          triggerHit();
+        }
+      }
+    }
+
+    function triggerHit() {
+      statusText.textContent = '앗! 부딪혔어요';
+      gameWrapper.classList.add('shake');
+      setTimeout(() => gameWrapper.classList.remove('shake'), 400);
+      endGame('💥 미야올이 부딪혔어요! 다시 도전?');
+    }
+
+    function collectCoin(points, obj) {
+      score += points;
+      coinScore += points;
+      statusText.textContent = `코인 +${points}!`;
+      const popup = document.createElement('div');
+      popup.className = 'popup';
+      popup.textContent = `+${points}`;
+      popup.style.left = `${obj.x}px`;
+      popup.style.top = `${obj.y}px`;
+      gameArea.appendChild(popup);
+      setTimeout(() => popup.remove(), 900);
+      createParticles(obj.x, obj.y);
+      if (coinScore >= 5) levelUp();
+    }
+
+    function levelUp() {
+      level += 1;
+      coinScore = 0;
+      speedMultiplier += 0.12;
+      statusText.textContent = `레벨 ${level}! 더 빨라졌어요`;
+      gameWrapper.classList.add('celebrate');
+      setTimeout(() => gameWrapper.classList.remove('celebrate'), 1000);
+      costumeModal.style.display = 'block';
+      if (level % 5 === 0 && !boss) spawnBoss();
+    }
+
+    function applyCostume(costume) {
+      playerEl.classList.remove('outfit-star', 'outfit-heart', 'outfit-sky', 'outfit-rainbow');
+      if (costume === 'outfit-rainbow' && level < 4) {
+        statusText.textContent = '레벨 4 이후 착용 가능!';
+      } else {
+        playerEl.classList.add(costume);
+        player.costume = costume;
+      }
+      costumeModal.style.display = 'none';
+    }
+
+    function defeatBoss() {
+      boss.el.remove();
+      boss = null;
+      bossBar.style.display = 'none';
+      statusText.textContent = '보스 격파! 무지개 폭죽!';
+      showBossFireworks();
+      score += 5;
+      document.getElementById('bossDefeat').style.display = 'block';
+      setTimeout(() => document.getElementById('bossDefeat').style.display = 'none', 1400);
+    }
+
+    function showBossFireworks() {
+      for (let i = 0; i < 18; i++) {
+        createParticles(Math.random() * gameArea.clientWidth, 180, true);
+      }
+    }
+
+    function createParticles(x, y, rainbow = false) {
+      for (let i = 0; i < 6; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = `${x + Math.random() * 20 - 10}px`;
+        p.style.top = `${y + Math.random() * 12 - 6}px`;
+        p.style.background = rainbow ? `linear-gradient(120deg, ${randomColor()}, ${randomColor()})` : 'linear-gradient(120deg, #ff9de6, #9bf6ff)';
+        gameArea.appendChild(p);
+        setTimeout(() => p.remove(), 800);
+      }
+    }
+
+    function getSpeed() {
+      return difficulty.baseSpeed + level * 0.3;
+    }
+
+    function isColliding(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function updateHUD() {
+      levelText.textContent = level;
+      scoreText.textContent = score;
+      speedText.textContent = `${(speedMultiplier).toFixed(1)}x`;
+      coinText.textContent = `${coinScore}/5`;
+      progressBar.style.width = `${(coinScore / 5) * 100}%`;
     }
 
     function endGame(message) {
       gameOver = true;
-      info.style.display = 'none';
       resultMessage.textContent = message;
       resultScreen.style.display = 'block';
     }
 
     function restartGame() {
-      if (!currentLevel) {
-        startScreen.style.display = 'block';
-        canvas.style.display = 'none';
-        resultScreen.style.display = 'none';
-        return;
-      }
-
-      initializeGame();
+      resetGame();
       resultScreen.style.display = 'none';
-      canvas.style.display = 'block';
-      info.style.display = 'block';
-      info.textContent = `점프 횟수: ${jumpCount} / 30`;
-      requestAnimationFrame(update);
+      requestAnimationFrame(loop);
+    }
+
+    function randomColor() {
+      const colors = ['#ff9de6', '#ffd166', '#9bf6ff', '#b5f7c0', '#a29bfe', '#ffadad'];
+      return colors[Math.floor(Math.random() * colors.length)];
     }
   </script>
 </body>
